@@ -8079,10 +8079,6 @@ tools/lintapidiff.cmx : \
     typing/ident.cmx \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmi :
-tools/make_opcodes.cmo : \
-    tools/make_opcodes.cmi
-tools/make_opcodes.cmx : \
-    tools/make_opcodes.cmi
 tools/make_opcodes.cmi :
 tools/objinfo.cmo : \
     typing/typedtree.cmi \
