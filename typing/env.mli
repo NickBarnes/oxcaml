@@ -455,6 +455,21 @@ val summary: t -> summary
 val keep_only_summary : t -> t
 val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 
+(* Equivalence of unscoped identifiers *)
+
+module Unscoped : sig
+  val with_pairs : (Ident.Unscoped.t * Ident.Unscoped.t) list -> t -> t
+  val get_pairs : t -> (Ident.Unscoped.t * Ident.Unscoped.t) list
+  val path_equiv : t -> Path.t -> Path.t -> bool
+end
+[@@alert dangerous "
+It is unsafe to use the common [Path.same] function in contexts where
+[Unscoped.with_pairs] has been used to enrich the environment with
+unscoped equalities; [Path.equiv] must be used instead. See [ctype.ml]
+for an example of careful usage of [Unscoped], by locally shadowing
+[Path] to hide [Path.same].
+"]
+
 (* Error report *)
 
 type error =
