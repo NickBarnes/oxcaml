@@ -45,6 +45,7 @@ and type_desc =
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of package
+  | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
 
 and package =
     { pack_path : Path.t;
@@ -669,6 +670,11 @@ let set_row_name row row_name =
   let row_fields = row_fields row in
   let row = row_repr_no_fields row in
   {row with row_fields; row_name}
+
+let subst_row_name_path id_map row =
+  match row_name row with
+  | Some (p, tl) -> set_row_name row (Some (Path.subst id_map p, tl))
+  | None -> row
 
 type row_desc_repr =
     Row of { fields: (label * row_field) list;

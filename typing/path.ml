@@ -94,19 +94,22 @@ let rec scope = function
   | Papply(p1, p2) -> Int.max (scope p1) (scope p2)
 
 let subst id_map p =
-  let changed = ref false in
-  let rec aux = function
-  | Pident id ->
-    begin match List.find (fun (i, _) -> Ident.same i id) id_map with
-      | (_, p) -> changed := true; p
-      | exception Not_found -> Pident id
-    end
-  | Pdot(p, s) -> Pdot(aux p, s)
-  | Pextra_ty(p, e) -> Pextra_ty(aux p, e)
-  | Papply(p1, p2) -> Papply(aux p1, aux p2)
-  in
-  let p' = aux p in
-  if !changed then p' else p
+  if id_map = [] then
+    p
+  else
+    let changed = ref false in
+    let rec aux = function
+    | Pident id ->
+      begin match List.find (fun (i, _) -> Ident.same i id) id_map with
+        | (_, p) -> changed := true; p
+        | exception Not_found -> Pident id
+      end
+    | Pdot(p, s) -> Pdot(aux p, s)
+    | Pextra_ty(p, e) -> Pextra_ty(aux p, e)
+    | Papply(p1, p2) -> Papply(aux p1, aux p2)
+    in
+    let p' = aux p in
+    if !changed then p' else p
 
 let check_for_unbound_unscoped_idents idl p =
   let exception Escape of Ident.Unscoped.t in

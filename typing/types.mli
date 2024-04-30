@@ -138,6 +138,9 @@ type type_desc =
   | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)
 
+  | Tfunctor of arg_label * Ident.Unscoped.t * package * type_expr
+  (** Type of a dependent arrow *)
+
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;
@@ -388,6 +391,8 @@ val row_fixed: row_desc -> fixed_explanation option
 val row_name: row_desc -> (Path.t * type_expr list) option
 
 val set_row_name: row_desc -> (Path.t * type_expr list) option -> row_desc
+
+val subst_row_name_path: (Ident.t * Path.t) list -> row_desc -> row_desc
 
 val get_row_field: label -> row_desc -> row_field
 
