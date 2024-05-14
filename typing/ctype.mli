@@ -243,6 +243,12 @@ val instance_poly_fixed:
 
 val instance_funct:
         id_in:Ident.t -> p_out:Path.t -> fixed:bool -> type_expr -> type_expr
+
+val instance_funct_nondep :
+        Env.t -> arg_label -> tfunctor -> module_type -> type_expr
+(** Tries to use the module argument actual signature to remove the depencies
+    that might occur in the return type of a module-dependent function. *)
+
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * type_expr list
 
 val instance_label:
@@ -468,9 +474,6 @@ val close_class_signature : Env.t -> class_signature -> bool
 
 exception Nondep_cannot_erase of Ident.t
 
-val identifier_escape :
-        Env.t -> Ident.Unscoped.t -> module_type ->
-        type_expr -> unit
 val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
            references to any of the given identifiers.

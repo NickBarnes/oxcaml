@@ -56,36 +56,10 @@ type t8 =
     A of ((module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t)
   | B of t1
 type t9 = C of ((module T : T) -> T.t -> T.t)
-Lines 24-26, characters 0-73:
-24 | type t10 = t8 =
-25 |     A of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
-26 |   | B of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
-Error: This variant or record definition does not match that of type "t8"
-       1. Constructors do not match:
-         "A of
-           ((module T : T) ->
-            (module A : Add with type t = T.t) -> A.t -> A.t)"
-       is not the same as:
-         "A of
-           ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)"
-       The type
-         "(module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t"
-       is not equal to the type
-         "(module T : T) -> (module Add with type t = T.t) -> T.t -> T.t"
-       Type "(module A : Add with type t = T.t) -> A.t -> A.t"
-       is not equal to type "(module Add with type t = T.t) -> T.t -> T.t"
-       2. Constructors do not match:
-         "B of t1"
-       is not the same as:
-         "B of
-           ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)"
-       The type
-         "t1" =
-           "(module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t"
-       is not equal to the type
-         "(module T : T) -> (module Add with type t = T.t) -> T.t -> T.t"
-       Type "(module A : Add with type t = T.t) -> A.t -> A.t"
-       is not equal to type "(module Add with type t = T.t) -> T.t -> T.t"
+type t10 =
+  t8 =
+    A of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
+  | B of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
 |}]
 
 (** Test constraint check, one success and the next one is a fail  *)
@@ -316,6 +290,7 @@ Error: This variant or record definition does not match that of type "typ1"
        The type "(module Add with type t = int) -> int -> int"
        is not equal to the type
          "(module A : Add with type t = int) -> float -> int"
+       Type "int" is not equal to type "float"
 |}]
 
 (* Check interaction of module-dependent functions with separability. *)

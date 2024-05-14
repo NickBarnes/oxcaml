@@ -92,7 +92,8 @@ let invalid_arg2 = f 3 4 (module Int)
 Line 1, characters 23-24:
 1 | let invalid_arg2 = f 3 4 (module Int)
                            ^
-Error: Cannot infer path of module for functor.
+Error: The constant "4" has type "int" but an expression was expected of type
+         "(module Typ)"
 |}]
 
 (* Here we cannot extract the type of m *)
@@ -101,10 +102,16 @@ let invalid_arg3 =
   f 3 m 4
 
 [%%expect{|
-Line 3, characters 6-7:
+Line 3, characters 2-5:
 3 |   f 3 m 4
-          ^
-Error: Cannot infer path of module for functor.
+      ^^^
+Error: This expression has type "(module M : Typ) -> M.t -> 'a * M.t"
+       but an expression was expected of type "(module Typ) -> 'b"
+       The module "M" would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument "(module M : S)"
+or "(module M)". Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
 |}]
 
 (* Here we cannot extract the type of m. This could be accepted because m does
@@ -117,7 +124,8 @@ let invalid_arg4 =
 Line 3, characters 6-7:
 3 |   f 3 m 4
           ^
-Error: Cannot infer path of module for functor.
+Error: The value "m" has type "(module Typ with type t = int)"
+       but an expression was expected of type "(module Typ)"
 |}]
 
 (** From here we will test things with labels *)
@@ -150,12 +158,7 @@ let apply_labelled_success = labelled' ~y:3
 
 [%%expect{|
 val labelled' : (module M : Typ with type t = int) -> y:M.t -> M.t = <fun>
-Line 3, characters 29-38:
-3 | let apply_labelled_success = labelled' ~y:3
-                                 ^^^^^^^^^
-Error: This function has type
-         "(module M : Typ with type t = int) -> y:M.t -> M.t"
-       The module argument "M" cannot be omitted in this application.
+val apply_labelled_success : (module Typ with type t = int) -> int = <fun>
 |}]
 
 (* Check that the optionnal argument is removed correctly when applying a
@@ -181,8 +184,11 @@ let foo f a =
   f ~a (fun x -> x)
 
 [%%expect{|
-Uncaught exception: Failure("NYI : Modular Explicits")
-
+Line 3, characters 7-19:
+3 |   f ~a (fun x -> x)
+           ^^^^^^^^^^^^
+Error: This expression should not be a function, the expected type is
+       "(module Typ)"
 |}]
 
 let foo2 f a =
@@ -191,8 +197,16 @@ let foo2 f a =
   f ~a m
 
 [%%expect{|
-Uncaught exception: Failure("NYI : Modular Explicits")
-
+Line 4, characters 2-6:
+4 |   f ~a m
+      ^^^^
+Error: This expression has type "(module M : Typ) -> M.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "M" would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument "(module M : S)"
+or "(module M)". Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
 |}]
 
 let foo3 f a =
@@ -200,8 +214,7 @@ let foo3 f a =
   f ~a (module Int)
 
 [%%expect{|
-Uncaught exception: Failure("NYI : Modular Explicits")
-
+val foo3 : (a:'a -> (module M : Typ) -> M.t) -> 'a -> Int.t = <fun>
 |}]
 
 let foo4 f a =
@@ -245,10 +258,16 @@ let x_from_generative_functor = id (module F ())
 
 [%%expect{|
 module F : () -> Typ
-Line 3, characters 35-48:
+Line 3, characters 32-34:
 3 | let x_from_generative_functor = id (module F ())
-                                       ^^^^^^^^^^^^^
-Error: Cannot infer path of module for functor.
+                                    ^^
+Error: This expression has type "(module T : Typ) -> T.t -> T.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "T" would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument "(module M : S)"
+or "(module M)". Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
 |}]
 
 module type Map = sig
@@ -339,10 +358,17 @@ let fail = map (module F()) string_of_int [3]
 
 [%%expect{|
 module F : () -> Map
-Line 6, characters 15-27:
+Line 6, characters 11-14:
 6 | let fail = map (module F()) string_of_int [3]
-                   ^^^^^^^^^^^^
-Error: Cannot infer path of module for functor.
+               ^^^
+Error: This expression has type
+         "(module M : Map) -> ('a -> 'b) -> 'a M.t -> 'b M.t"
+       but an expression was expected of type "(module Map) -> 'c"
+       The module "M" would escape its scope
+This function is module-dependent. The dependency is preserved
+when the function is passed a static module argument "(module M : S)"
+or "(module M)". Its argument here is not static, so the type-checker
+tried instead to change the function type to be non-dependent.
 |}]
 
 (* The example above is accepted if no abstract types are created *)
@@ -542,12 +568,12 @@ val restrict_signature1 :
 val restrict_signature2 :
   ((module T : Typ) -> T.t -> T.t) ->
   (module T : Typ with type t = int) -> int -> int = <fun>
-Line 8, characters 4-55:
-8 |     (x :> (module Typ with type t = int) -> int -> int)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
-         "(module Typ with type t = int) -> int -> int"
-Unexecuted phrases: 1 phrases did not execute due to an error
+val restrict_signature_to_remove_dep :
+  ((module T : Typ) -> T.t -> T.t) ->
+  (module Typ with type t = int) -> int -> int = <fun>
+val restrict_signature_to_add_dep :
+  ((module Typ) -> int -> int) ->
+  (module T : Typ with type t = int) -> T.t -> T.t = <fun>
 |}]
 
 module type TypPrivInt = sig
@@ -565,12 +591,12 @@ let restrict_signature_with_priv_to_add_dep =
 
 [%%expect{|
 module type TypPrivInt = sig type t = private int end
-Line 7, characters 4-45:
-7 |     (x :> (module TypPrivInt) -> unit -> int)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module T : Typ) -> unit -> T.t" is not a subtype of
-         "(module TypPrivInt) -> unit -> int"
-Unexecuted phrases: 1 phrases did not execute due to an error
+val restrict_signature_with_priv_to_remove_dep :
+  ((module T : Typ) -> unit -> T.t) -> (module TypPrivInt) -> unit -> int =
+  <fun>
+val restrict_signature_with_priv_to_add_dep :
+  ((module Typ) -> int -> int) -> (module T : TypPrivInt) -> T.t -> int =
+  <fun>
 |}]
 
 module PrivateFCM = struct
@@ -582,10 +608,8 @@ let subtyping_to_private_fcm x =
 
 [%%expect{|
 module PrivateFCM : sig type t = private (module Typ with type t = int) end
-Line 6, characters 2-54:
-6 |   (x : (module M : Typ) -> M.t :> PrivateFCM.t -> int)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module M : Typ) -> M.t" is not a subtype of "PrivateFCM.t -> int"
+val subtyping_to_private_fcm :
+  ((module M : Typ) -> M.t) -> PrivateFCM.t -> int = <fun>
 |}]
 
 let failed_subtyping x =
@@ -675,12 +699,17 @@ let basic_subtyping2 (x : mod_with_int -> int -> int) =
 [%%expect{|
 type mod_with_int = (module Typ with type t = int)
 type mod_without_cstrs = (module Typ)
-Line 6, characters 2-35:
-6 |   (x :> mod_with_int -> int -> int)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
-         "mod_with_int -> int -> int"
-Unexecuted phrases: 3 phrases did not execute due to an error
+val restrict_signature_in_path :
+  ((module T : Typ) -> T.t -> T.t) -> mod_with_int -> int -> int = <fun>
+val restrict_signature_in_path2 :
+  (mod_without_cstrs -> int -> int) ->
+  (module T : Typ with type t = int) -> T.t -> T.t = <fun>
+val basic_subtyping :
+  ((module T : Typ with type t = int) -> T.t -> T.t) ->
+  mod_with_int -> int -> int = <fun>
+val basic_subtyping2 :
+  (mod_with_int -> int -> int) ->
+  (module T : Typ with type t = int) -> T.t -> T.t = <fun>
 |}]
 
 (* Small test to ensure subtyping does not expect the arrow argument to
@@ -693,6 +722,7 @@ Line 2, characters 4-21:
 2 |     (x :> int -> int)
         ^^^^^^^^^^^^^^^^^
 Error: Type "(module T : Typ) -> T.t" is not a subtype of "int -> int"
+       Type "int" is not a subtype of "(module Typ)"
 |}]
 
 (** Tests about unannoted applications *)
@@ -874,21 +904,9 @@ let incr_general''
   (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a)
 
 [%%expect{|
-Lines 2-3, characters 4-89:
-2 | ....(incr_general :>
-3 |   (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a)
-Error: Type
-         "(module Cfrom : Coerce with type b = int) ->
-         (module Cto : Coerce with type a = int and type b = Cfrom.a) ->
-         Cfrom.a -> Cto.b"
-       is not a subtype of
-         "(module C1 : CoerceToInt) ->
-         (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a"
-       Type
-         "(module Cto : Coerce with type a = int and type b = Cfrom.a) ->
-         Cfrom.a -> Cto.b"
-       is not a subtype of
-         "(module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a"
+val incr_general'' :
+  (module C1 : CoerceToInt) ->
+  (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
 |}]
 
 let incr_general'
@@ -896,21 +914,9 @@ let incr_general'
   (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a)
 
 [%%expect{|
-Line 2, characters 5-17:
-2 |   = (incr_general :
-         ^^^^^^^^^^^^
-Error: The value "incr_general" has type
-         "(module C1 : Coerce with type b = int) ->
-         (module Cto : Coerce with type a = int and type b = C1.a) ->
-         C1.a -> Cto.b"
-       but an expression was expected of type
-         "(module C1 : CoerceToInt) ->
-         (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a"
-       Type
-         "(module Cto : Coerce with type a = int and type b = C1.a) ->
-         C1.a -> Cto.b"
-       is not compatible with type
-         "(module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a"
+val incr_general' :
+  (module C1 : CoerceToInt) ->
+  (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
 |}]
 
 (* Test that variance is correctly used during subtyping *)
@@ -1153,7 +1159,7 @@ let test_instance_nondep f =
 
 [%%expect{|
 val test_instance_nondep :
-  ((module M : Typ) -> int) -> (module M : Typ) -> int = <fun>
+  ((module M : Typ) -> M.t) -> (module M : Typ) -> M.t = <fun>
 |}, Principal{|
 Line 3, characters 10-11:
 3 |   ignore (f (module struct type t = int end));
@@ -1161,7 +1167,7 @@ Line 3, characters 10-11:
 Warning 18 [not-principal]: applying a dependent function is not principal.
 
 val test_instance_nondep :
-  ((module M : Typ) -> int) -> (module M : Typ) -> int = <fun>
+  ((module M : Typ) -> M.t) -> (module M : Typ) -> M.t = <fun>
 |}]
 
 (* Test relaxed value restriction *)
@@ -1350,6 +1356,27 @@ val linking_ident2 :
   (module A : Typ with type t = int) -> int = <fun>
 |}]
 
+let test_filter_arrow
+  : (module M : Typ with type t = int) -> M.t
+  = fun m -> 3
+
+[%%expect{|
+val test_filter_arrow : (module M : Typ with type t = int) -> M.t = <fun>
+|}]
+
+let test_failing_filter_arrow
+  : (module M : Typ) -> M.t
+  = fun m -> assert false
+
+[%%expect{|
+Line 3, characters 4-25:
+3 |   = fun m -> assert false
+        ^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type "(module Typ) -> 'a"
+       but an expression was expected of type "(module M : Typ) -> M.t"
+       The module "M" would escape its scope
+|}]
+
 (* Here we test that the short-path mechanism does not
    replace [Avoid__me.t] by [M.t]. *)
 module Avoid__me = struct type t end
@@ -1359,11 +1386,7 @@ let f: (module M:S) -> Avoid__me.t -> unit = fun _ _ -> ()
 [%%expect{|
 module Avoid__me : sig type t end
 module type S = sig type t = Avoid__me.t end
-Line 3, characters 45-58:
-3 | let f: (module M:S) -> Avoid__me.t -> unit = fun _ _ -> ()
-                                                 ^^^^^^^^^^^^^
-Error: This expression should not be a function, the expected type is
-       "(module M : S) -> Avoid__me.t -> unit"
+val f : (module M : S) -> Avoid__me.t -> unit = <fun>
 |}]
 
 (* We would expect the second example to be accepted but this behaviour
@@ -1397,10 +1420,7 @@ let u f  = (f: (module M : T) -> ([> M.v ] as 'a) -> 'a :> (module T) -> _ -> _)
 [%%expect{|
 module type T = sig type a = int type v = [ `A of a ] end
 module M : sig type a = int type v = [ `A of a ] end
-Line 6, characters 48-60:
-6 | let f: (module M:T) -> ([> M.v ] as 'a) -> 'a = fun _ x -> x
-                                                    ^^^^^^^^^^^^
-Error: This expression should not be a function, the expected type is
-       "(module M : T) -> ([> M.v ] as 'a) -> 'a"
-Unexecuted phrases: 1 phrases did not execute due to an error
+val f : (module M : T) -> ([> M.v ] as 'a) -> 'a = <fun>
+val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
+  <fun>
 |}]
