@@ -1706,6 +1706,11 @@ void compact_release_freelist(void)
   CAML_EV_BEGIN(EV_COMPACT_RELEASE);
   caml_plat_lock_blocking(&pool_freelist.lock);
 
+  if (!caml_compact_unmap) {
+    /* Don't unmap anything; free pools remain on free list */
+    goto done;
+  }
+
   size_t free_pools_count = compact_count_pools(pool_freelist.free);
 
   if (!free_pools_count) {
