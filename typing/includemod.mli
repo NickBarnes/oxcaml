@@ -83,10 +83,13 @@ module Error: sig
   and signature_symptom = {
     env: Env.t;
     subst: Subst.t;
+    sig1: signature;
+    sig2: signature;
     missings: Types.signature_item list;
-    incompatibles: (Ident.t * sigitem_symptom) list;
+    incompatibles: (Types.signature_item * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
-    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+    additions: signature_item list;
+    untypables: ((Types.signature_item as 'it) * 'it * int) list;
     (** signature items that could not be compared due to type divergence *)
   }
   and sigitem_symptom =
@@ -180,7 +183,12 @@ val check_modtype_inclusion :
 val check_modtype_equiv:
   loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
 
-val signatures: Env.t -> mark:bool -> signature -> signature -> module_coercion
+val is_modtype_equiv:
+  Env.t -> module_type -> module_type -> bool
+
+val signatures:
+  Env.t -> ?subst:Subst.t -> mark:bool ->
+  signature -> signature -> module_coercion
 
 (** Check an implementation against an interface *)
 val check_implementation: Env.t -> signature -> signature -> unit
@@ -239,6 +247,8 @@ exception Apply_error of {
 
 val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
 
+(** Error message functions *)
+
 module Functor_inclusion_diff: sig
   module Defs: sig
     type left = Types.functor_parameter
@@ -267,4 +277,27 @@ module Functor_app_diff: sig
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
     Diffing.Define(Defs).patch
+end
+
+(* Typechecking with subst *)
+module Item: sig
+  val value_descriptions :
+    loc:Warnings.loc -> Env.t -> Subst.t
+    -> Ident.t -> Types.value_description -> Types.value_description ->
+    (unit, Error.sigitem_symptom) result
+
+  val type_declarations :
+    loc:Warnings.loc -> Env.t -> Subst.t ->
+    Ident.t -> Types.type_declaration -> Types.type_declaration ->
+    (unit, Error.sigitem_symptom) result
+
+  val class_type_declarations :
+    loc:Warnings.loc ->  Env.t -> Subst.t ->
+    Ident.t -> Types.class_type_declaration -> Types.class_type_declaration ->
+    (unit, Error.sigitem_symptom) result
+
+  val class_declarations :
+    loc:Warnings.loc -> Env.t  -> Subst.t ->
+    Ident.t -> Types.class_declaration -> Types.class_declaration ->
+    (unit, Error.sigitem_symptom) result
 end
