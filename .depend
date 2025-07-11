@@ -1065,6 +1065,7 @@ typing/includemod_errorprinter.cmo : \
     typing/oprint.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    typing/includemod_modulediffer.cmi \
     typing/includemod.cmi \
     typing/includecore.cmi \
     typing/includeclass.cmi \
@@ -1085,6 +1086,7 @@ typing/includemod_errorprinter.cmx : \
     typing/oprint.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    typing/includemod_modulediffer.cmx \
     typing/includemod.cmx \
     typing/includecore.cmx \
     typing/includeclass.cmx \
@@ -1100,6 +1102,26 @@ typing/includemod_errorprinter.cmi : \
     typing/includemod.cmi \
     utils/format_doc.cmi \
     typing/env.cmi
+typing/includemod_modulediffer.cmo : \
+    typing/types.cmi \
+    typing/subst.cmi \
+    typing/path.cmi \
+    utils/misc.cmi \
+    typing/includemod.cmi \
+    typing/ident.cmi \
+    typing/includemod_modulediffer.cmi
+typing/includemod_modulediffer.cmx : \
+    typing/types.cmx \
+    typing/subst.cmx \
+    typing/path.cmx \
+    utils/misc.cmx \
+    typing/includemod.cmx \
+    typing/ident.cmx \
+    typing/includemod_modulediffer.cmi
+typing/includemod_modulediffer.cmi : \
+    typing/types.cmi \
+    typing/includemod.cmi \
+    typing/ident.cmi
 typing/mtype.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
