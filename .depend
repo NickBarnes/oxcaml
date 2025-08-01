@@ -1538,8 +1538,8 @@ typing/signature_matching.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
     utils/stable_matching.cmi \
-    typing/shape.cmi \
     typing/path.cmi \
+    parsing/location.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
     typing/signature_matching.cmi
@@ -1547,13 +1547,14 @@ typing/signature_matching.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
     utils/stable_matching.cmx \
-    typing/shape.cmx \
     typing/path.cmx \
+    parsing/location.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/signature_matching.cmi
 typing/signature_matching.cmi : \
     typing/types.cmi \
+    parsing/location.cmi \
     typing/includemod.cmi \
     typing/ident.cmi
 typing/stypes.cmo : \
