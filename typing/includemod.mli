@@ -139,6 +139,7 @@ val field_desc: field_kind -> Ident.t -> field_desc
 module FieldMap: Map.S with type key = field_desc
 
 val item_ident_name: Types.signature_item -> Ident.t * Location.t * field_desc
+val item_subst: Ident.t -> Types.signature_item -> Subst.t -> Subst.t
 val is_runtime_component: Types.signature_item -> bool
 
 
@@ -182,9 +183,6 @@ val check_modtype_inclusion :
 
 val check_modtype_equiv:
   loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
-
-val is_modtype_equiv:
-  Env.t -> module_type -> module_type -> bool
 
 val signatures:
   Env.t -> ?subst:Subst.t -> mark:bool ->
