@@ -1,32 +1,61 @@
-let () =
-  let exe = ".exe" in
-  let ocamlc =
-    let (base, suffix) =
-      let s = Sys.executable_name in
-      if Filename.check_suffix s exe then
-        (Filename.chop_suffix s exe, exe)
-      else
-        (s, "") in
-    base ^ "c" ^ suffix in
-  if Sys.ocaml_version <> "%{_:version}%" then
-    (Printf.eprintf
-       "ERROR: The compiler found at %%s has version %%s,\n\
-        and this package requires %{_:version}%.\n\
-        You should use e.g. 'opam switch create %{_:name}%.%%s' \
-        instead."
-       ocamlc Sys.ocaml_version Sys.ocaml_version;
-     exit 1)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                        Louis Gesbert, OCamlPro                         *)
+(*                                                                        *)
+(*   Copyright 2017 OCamlPro SAS                                          *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(* For as long it remains not totally impractical to do so, this script is
+   written in OCaml 3.07. Its purpose is to generate an opam .config file
+   for the ocaml-system package. It defines one package variable path, which is
+   the directory containing the compiler binaries (e.g. /usr/bin). It also uses
+   opam's file-depends mechanism adding the checksum for the ocamlc binary,
+   which causes the ocaml-system to be reconsidered if the user changes the
+   system compiler (e.g. by running brew upgrade). For legacy support, it also
+   captures the checksum of graphics.cmi, which is used by the graphics package
+   for old compilers to manually add the graphics library if it isn't compiled
+   by default. The purpose of this is to ensure that an opam switch recompiles
+   for example if the user switches from the Debian ocaml-nox to the full ocaml
+   package. *)
+
+let ocamlc =
+  if Filename.check_suffix Sys.executable_name "exe" then
+    Filename.chop_suffix Sys.executable_name "exe" ^ "c.exe"
   else
+    Sys.executable_name ^ "c"
+
+(* Check that Sys.ocaml_version is as expected *)
+let () =
+  if Sys.ocaml_version <> "%{_:version}%" then begin
+    Printf.eprintf
+      "ERROR: The compiler found at %%s has version %%s,\n\
+       and this package requires %{_:version}%.\n\
+       You should use e.g. 'opam switch create %{%:_name}%.%%s' instead.\n"
+       ocamlc Sys.ocaml_version Sys.ocaml_version;
+    exit 1
+  end
+
+(* Write the .config file *)
+let () =
   let ocamlc_digest = Digest.to_hex (Digest.file ocamlc) in
   let libdir =
-    if Sys.command (ocamlc^" -where > %{_:name}%.config") = 0 then
-      let ic = open_in "%{_:name}%.config" in
+    let exit_code = Sys.command (ocamlc ^ " -where > where") in
+    if exit_code = 0 then
+      (* Must be opened in text mode for Windows *)
+      let ic = open_in "where" in
       let r = input_line ic in
-      close_in ic;
-      Sys.remove "%{_:name}%.config";
-      r
-    else
-      failwith "Bad return from 'ocamlc -where'"
+      close_in ic; Sys.remove "where"; r
+    else begin
+      Printf.eprintf "Unexpected exit code %%d from `ocamlc -where'\n" exit_code;
+      exit 1
+    end
   in
   let graphics = Filename.concat libdir "graphics.cmi" in
   let graphics_digest =
