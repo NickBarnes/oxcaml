@@ -93,14 +93,18 @@ let () =
     end
   in
   let stubsdir =
-    let ic = open_in (Filename.concat libdir "ld.conf") in
-    let rec input_lines acc =
-      try input_lines (input_line ic :: acc)
-      with End_of_file -> close_in ic; List.rev acc
-    in
-    let lines = input_lines [] in
-    let sep = if Sys.os_type = "Win32" then ";" else ":" in
-    String.concat sep lines
+    let ld_conf = Filename.concat libdir "ld.conf" in
+    if Sys.file_exists ld_conf then
+      let ic = open_in ld_conf in
+      let rec input_lines acc =
+        try input_lines (input_line ic :: acc)
+        with End_of_file -> close_in ic; List.rev acc
+      in
+      let lines = input_lines [] in
+      let sep = if Sys.os_type = "Win32" then ";" else ":" in
+      String.concat sep lines
+    else
+      ""
   in
   let native = Sys.file_exists (binary "ocamlopt") in
   let native_tools = Sys.file_exists (binary "ocamlc.opt") in
