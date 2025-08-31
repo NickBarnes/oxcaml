@@ -79,7 +79,7 @@ This means `%` symbols should be doubled.
 Historically, this file lived in opam-repository itself, and was installed as a
 script by the `ocaml-config` package and then used by each of the `ocaml`
 packages. opam-repository no longer stores files directly in its repo, but the
-script is downloaded from this repository by the `ocaml-config` package.
+script is still downloaded from this repository by the `ocaml` package.
 
 ### `gen_ocaml-system_config.ml.in`
 

@@ -25,6 +25,18 @@
    for example if the user switches from the Debian ocaml-nox to the full ocaml
    package. *)
 
+(* The script must be invoked using the interpreter, for example:
+      ocaml gen_ocaml-system_config.ml 5.4.0 ocaml-system
+   where "5.4.0" is the expected value of Sys.ocaml_version, the resulting
+   configuration should be written to "ocaml-system.config". *)
+let expected_ocaml_version, package_name, package_config_file =
+  match Sys.argv with
+  | [| _; expected_ocaml_version; package_name |] ->
+      expected_ocaml_version, package_name, package_name ^ ".config"
+  | _ ->
+      prerr_endline "Invalid arguments";
+      exit 1
+
 let ocamlc =
   if Filename.check_suffix Sys.executable_name "exe" then
     Filename.chop_suffix Sys.executable_name "exe" ^ "c.exe"
@@ -33,12 +45,13 @@ let ocamlc =
 
 (* Check that Sys.ocaml_version is as expected *)
 let () =
-  if Sys.ocaml_version <> "%{_:version}%" then begin
+  if Sys.ocaml_version <> expected_ocaml_version then begin
     Printf.eprintf
       "ERROR: The compiler found at %%s has version %%s,\n\
-       and this package requires %{_:version}%.\n\
-       You should use e.g. 'opam switch create %{%:_name}%.%%s' instead.\n"
-       ocamlc Sys.ocaml_version Sys.ocaml_version;
+       and this package requires %%s.\n\
+       You should use e.g. 'opam switch create %%s.%%s' instead.\n"
+       ocamlc Sys.ocaml_version expected_ocaml_version package_name
+       Sys.ocaml_version;
     exit 1
   end
 
@@ -64,7 +77,7 @@ let () =
     else
       String.make 32 '0'
   in
-  let oc = open_out "%{_:name}%.config" in
+  let oc = open_out package_config_file in
   Printf.fprintf oc "opam-version: \"2.0\"\n\
                      file-depends: [ [ %%S %%S ] [ %%S %%S ] ]\n\
                      variables { path: %%S }\n"

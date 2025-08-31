@@ -29,14 +29,28 @@
                unstable. *)
 
 (* The script must be invoked using the interpreter, for example:
-      ocaml gen_ocaml_config.ml 5.4.0 ocaml
+      ocaml gen_ocaml_config.ml 5.4.0 ocaml 5.4.0+options false +flambda
    where "5.4.0" is the expected value of Sys.ocaml_version (with any additional
-   information removed) and the resulting configuration should be written to
-   "ocaml.config". *)
-let expected_ocaml_version, package_config_file =
-  match Sys.argv with
-  | [| _; expected_ocaml_version; package_config_file |] ->
-      expected_ocaml_version, package_config_file ^ ".config"
+   information removed), the resulting configuration should be written to
+   "ocaml.config" and the "compiler" variable should be set to
+   "5.4.0+options+flambda". *)
+let expected_ocaml_version,
+    package_config_file,
+    compiler_package_version,
+    preinstalled,
+    option_names =
+  match Array.to_list Sys.argv with
+  | _ ::
+    expected_ocaml_version ::
+    package_config_file ::
+    compiler_package_version ::
+    preinstalled ::
+    options ->
+      expected_ocaml_version,
+      package_config_file ^ ".config",
+      compiler_package_version,
+      preinstalled,
+      String.concat "" (List.filter ((<>) "") options)
   | _ ->
       prerr_endline "Invalid arguments";
       exit 1
@@ -105,7 +119,8 @@ let () =
       native-tools: %%b\n  \
       native-dynlink: %%b\n  \
       stubsdir: %%S\n  \
-      preinstalled: %{ocaml-system:installed}%\n  \
-      compiler: \"%{ocaml-system:installed?system:}%%{ocaml-base-compiler:version}%%{dkml-base-compiler:version}%%{ocaml-variants:version}%%{ocaml-option-32bit:installed?+32bit:}%%{ocaml-option-afl:installed?+afl:}%%{ocaml-option-bytecode-only:installed?+bytecode-only:}%%{ocaml-option-default-unsafe-string:installed?+default-unsafe-string:}%%{ocaml-option-fp:installed?+fp:}%%{ocaml-option-flambda:installed?+flambda:}%%{ocaml-option-musl:installed?+musl:}%%{ocaml-option-nnp:installed?+nnp:}%%{ocaml-option-no-flat-float-array:installed?+no-flat-float-array:}%%{ocaml-option-spacetime:installed?+spacetime:}%%{ocaml-option-static:installed?+static:}%\"\n\
-    }\n" native native_tools native_dynlink stubsdir;
+      preinstalled: %%s\n  \
+      compiler: \"%%s%%s\"\n\
+    }\n" native native_tools native_dynlink stubsdir preinstalled
+         compiler_package_version option_names;
   close_out oc
