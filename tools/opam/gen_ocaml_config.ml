@@ -81,7 +81,18 @@ let () =
       fun name -> Filename.concat dir name
   in
   let libdir =
-    let exit_code = Sys.command (binary "ocamlc" ^ " -where > where") in
+    let exit_code =
+      let ocamlc = binary "ocamlc" in
+      let ocamlc =
+        if Sys.os_type = "Win32" then
+          if String.contains ocamlc ' ' then
+            "\"" ^ ocamlc ^ "\""
+          else
+            ocamlc
+        else
+          Filename.quote ocamlc
+      in
+      Sys.command (ocamlc ^ " -where > where") in
     if exit_code = 0 then
       (* Must be opened in text mode for Windows *)
       let ic = open_in "where" in

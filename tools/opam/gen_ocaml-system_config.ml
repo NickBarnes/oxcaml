@@ -59,6 +59,15 @@ let () =
 let () =
   let ocamlc_digest = Digest.to_hex (Digest.file ocamlc) in
   let libdir =
+    let ocamlc =
+      if Sys.os_type = "Win32" then
+        if String.contains ocamlc ' ' then
+          "\"" ^ ocamlc ^ "\""
+        else
+          ocamlc
+      else
+        Filename.quote ocamlc
+    in
     let exit_code = Sys.command (ocamlc ^ " -where > where") in
     if exit_code = 0 then
       (* Must be opened in text mode for Windows *)
