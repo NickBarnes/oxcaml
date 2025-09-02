@@ -106,6 +106,25 @@ let () =
   let stubsdir =
     let ld_conf = Filename.concat libdir "ld.conf" in
     if Sys.file_exists ld_conf then
+      let input_line ic =
+        let line = input_line ic in
+        if line = Filename.current_dir_name then
+          libdir
+        else if line = Filename.parent_dir_name then
+          Filename.concat libdir line
+        else
+          Scanf.sscanf line "%[.]%1[/\\]" (fun prefix separator ->
+            if separator = "/" || Sys.os_type <> "Unix" && separator = "\\" then
+              if prefix = Filename.current_dir_name then
+                let line = String.sub line 2 (String.length line - 2) in
+                Filename.concat libdir line
+              else if prefix = Filename.parent_dir_name then
+                Filename.concat libdir line
+              else
+                line
+            else
+              line)
+      in
       let ic = open_in ld_conf in
       let rec input_lines acc =
         try input_lines (input_line ic :: acc)
