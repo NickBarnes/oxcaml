@@ -103,6 +103,10 @@ CAMLexport value caml_process_pending_signals_exn(void)
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
+  /* only run signal handlers in domain 0 */
+  if (Caml_state->id != 0) {
+    return Val_unit;
+  }
 
   /* Check that there is indeed a pending signal before issuing the
       syscall in [pthread_sigmask]. */
