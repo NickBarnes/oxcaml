@@ -362,6 +362,15 @@ void caml_handle_incoming_interrupts(void)
   handle_incoming(domain_self);
 }
 
+void caml_domain_interrupt_default(caml_domain_state *domain)
+{
+  dom_internal *target = &all_domains[domain->id];
+  interrupt_domain(target);
+}
+
+CAMLexport void (*caml_domain_interrupt_hook)(caml_domain_state *domain) =
+    &caml_domain_interrupt_default;
+
 int caml_send_interrupt(dom_internal *target)
 {
   /* signal that there is an interrupt pending */
@@ -373,7 +382,7 @@ int caml_send_interrupt(dom_internal *target)
   caml_plat_broadcast(&target->interrupt_cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->interrupt_lock);
 
-  interrupt_domain(target);
+  (*caml_domain_interrupt_hook)(target->state);
 
   return 1;
 }

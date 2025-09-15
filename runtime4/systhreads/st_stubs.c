@@ -182,7 +182,10 @@ struct caml_locking_scheme caml_default_locking_scheme =
     NULL,
     (void (*)(void*))&st_masterlock_init,
     default_can_skip_yield,
-    (void (*)(void*))&st_thread_yield };
+    (void (*)(void*))&st_thread_yield
+    NULL,
+    CAML_LOCKING_SCHEME_VERSION;
+};
 
 CAMLexport struct caml_locking_scheme *caml_get_default_locking_scheme(void)
 {

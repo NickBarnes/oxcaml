@@ -86,6 +86,9 @@ struct caml_locking_scheme {
      and expect it held on return */
   int (*can_skip_yield)(void*);
   void (*yield)(void*);
+  void (*handle_interrupt)(void);
+/* magic number should be CAML_LOCKING_SCHEME_VERSION */
+  uintnat magic;
 };
 
 CAMLextern_libthreads
