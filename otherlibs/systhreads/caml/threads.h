@@ -69,6 +69,15 @@ CAMLextern_libthreads int caml_c_thread_unregister(void);
 */
 
 enum caml_thread_type { Thread_type_caml, Thread_type_c_registered };
+
+/* Magic number to check ABI compatibility.
+ * Values are 0xCA3110cx, standing for CAML LOCk x. */
+
+#define CAML_LOCKING_SCHEME_VERSION 1
+
+#define CAML_LOCKING_SCHEME_MAGIC \
+  ((uintnat)0xCA3110c0 + CAML_LOCKING_SCHEME_VERSION) /* CAmL LOC_ */
+
 struct caml_locking_scheme {
   void* context;
   void (*lock)(void*);
@@ -89,6 +98,9 @@ struct caml_locking_scheme {
      and expect it held on return */
   int (*can_skip_yield)(void*);
   void (*yield)(void*);
+  void (*handle_interrupt)(void);
+/* magic number should be CAML_LOCKING_SCHEME_MAGIC */
+  uintnat magic;
 };
 
 /* Switch to a new runtime locking scheme.

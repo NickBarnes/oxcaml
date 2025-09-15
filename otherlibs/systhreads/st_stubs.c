@@ -81,6 +81,19 @@ static enum {
   LOCKMODE_DOMAINS
 } domain_lockmode = LOCKMODE_STARTUP;
 
+static void check_locking_scheme(struct caml_locking_scheme *scheme)
+{
+  CAMLassert(scheme->lock != NULL);
+  CAMLassert(scheme->unlock != NULL);
+  CAMLassert(scheme->thread_start != NULL);
+  CAMLassert(scheme->thread_stop != NULL);
+  CAMLassert(scheme->reinitialize_after_fork != NULL);
+  /* Don't check scheme->can_skip_yield as NULL is valid */
+  CAMLassert(scheme->yield != NULL);
+  /* Don't check scheme->handle_interrupt as NULL is valid */
+  CAMLassert(scheme->magic == CAML_LOCKING_SCHEME_MAGIC);
+}
+
 /* OS-specific code */
 #ifdef _WIN32
 #include "st_win32.h"
@@ -233,6 +246,11 @@ static int default_can_skip_yield(void *v)
   return st_masterlock_waiters(m) == 0;
 }
 
+static void default_handle_interrupt(void)
+{
+    /* Do nothing, as interrupt sufficiently handled by backup thread */
+}
+
 static void default_reinitialize_after_fork(void *v)
 {
   st_masterlock *m = v;
@@ -346,6 +364,7 @@ CAMLexport void caml_thread_restore_runtime_state(void)
 
 CAMLexport void caml_switch_runtime_locking_scheme(struct caml_locking_scheme* new)
 {
+  check_locking_scheme(new);
   struct caml_locking_scheme* old;
   int dom_id = Caml_state->id;
   if (domain_lockmode == LOCKMODE_DOMAINS)
@@ -682,6 +701,9 @@ static void caml_thread_domain_initialize_hook(void)
   ls->reinitialize_after_fork = (void (*)(void*))&default_reinitialize_after_fork;
   ls->can_skip_yield = &default_can_skip_yield;
   ls->yield = &st_thread_yield;
+  ls->handle_interrupt = &default_handle_interrupt;
+  ls->magic = CAML_LOCKING_SCHEME_VERSION;
+  check_locking_scheme(ls);
 
   Locking_scheme(Caml_state->id) = ls;
 
@@ -723,6 +745,12 @@ void caml_thread_interrupt_hook(void)
   return;
 }
 
+void caml_thread_domain_interrupt_hook(caml_domain_state *domain)
+{
+    struct caml_locking_scheme* s = atomic_load(&Locking_scheme(domain->id));
+    if (s->handle_interrupt != NULL) s->handle_interrupt();
+}
+
 /* [caml_thread_initialize] initialises the systhreads infrastructure. This
    function first sets up the chain for systhreads on this domain, then setup
    the global variables and hooks for systhreads to cooperate with the runtime
@@ -750,6 +778,7 @@ CAMLprim value caml_thread_initialize(value unit)
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
+  caml_domain_interrupt_hook = caml_thread_domain_interrupt_hook;
   caml_domain_spawn_hook = caml_thread_domain_spawn_hook;
   caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
