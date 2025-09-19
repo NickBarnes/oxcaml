@@ -271,8 +271,8 @@ Working version
   (Jacques Garrigue and Takafumi Saikawa, reported by Olivier Nicole,
    review by Gabriel Scherer)
 
-- #14483: Reset type ID counter between compilations to restore reproducibility
-  of debug information between `ocamlc -c foo.mli foo.ml` versus
+- #14483: Reset type ID and level counters between compilations to restore
+  reproducibility of debug information between `ocamlc -c foo.mli foo.ml` versus
   `ocamlc -c foo.mli; ocamlc -c foo.ml`
   (David Allsopp, review by Gabriel Scherer)
 

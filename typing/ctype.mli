@@ -95,6 +95,9 @@ val create_scope: unit -> int
            the scope continues until the end of the compilation unit
            or toplevel session. *)
 
+val reset: unit -> unit
+        (* Reset all level counters - used between compilation units *)
+
 val newty: type_desc -> type_expr
 val new_scoped_ty: int -> type_desc -> type_expr
 val newvar: ?name:string -> unit -> type_expr

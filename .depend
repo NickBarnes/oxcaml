@@ -7094,6 +7094,7 @@ driver/compmisc.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/ctype.cmi \
     utils/config.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -7107,6 +7108,7 @@ driver/compmisc.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    typing/ctype.cmx \
     utils/config.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
