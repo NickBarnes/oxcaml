@@ -754,6 +754,8 @@ let match_row_field ~present ~absent ~either (f : row_field) =
 
 let new_id = Local_store.s_ref (-1)
 
+let reset () = new_id := -1
+
 let create_expr = Transient_expr.create
 
 let proto_newty3 ~level ~scope desc  =
