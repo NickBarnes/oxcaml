@@ -364,8 +364,7 @@ void caml_handle_incoming_interrupts(void)
 
 void caml_domain_interrupt_default(caml_domain_state *domain)
 {
-  dom_internal *target = &all_domains[domain->id];
-  interrupt_domain(target);
+  /* do nothing, as we unconditionally interrupt the domain from send_interrupt */
 }
 
 CAMLexport void (*caml_domain_interrupt_hook)(caml_domain_state *domain) =
@@ -382,6 +381,7 @@ int caml_send_interrupt(dom_internal *target)
   caml_plat_broadcast(&target->interrupt_cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->interrupt_lock);
 
+  interrupt_domain(target);
   (*caml_domain_interrupt_hook)(target->state);
 
   return 1;
@@ -1094,14 +1094,14 @@ static void* backup_thread_func(void* v)
     switch (msg) {
       case BT_IN_BLOCKING_SECTION:
         /* Handle interrupts on behalf of the main thread:
-         *  - must hold domain_lock to handle interrupts
+         *  - must hold the generalised domain lock to handle interrupts
          *  - need to guarantee no blocking so that backup thread
          *    can be signalled from caml_leave_blocking_section
          */
         if (caml_incoming_interrupts_queued()) {
-          if (caml_plat_try_lock(&di->domain_lock)) {
+          if (caml_bt_try_domain_lock_hook()) {
             caml_handle_incoming_interrupts();
-            caml_plat_unlock(&di->domain_lock);
+            caml_bt_unlock_hook();
           }
         }
         /* Wait safely if there is nothing to do.
@@ -1119,11 +1119,11 @@ static void* backup_thread_func(void* v)
          * Will be woken from caml_bt_exit_ocaml
          * or domain_terminate
          */
-        caml_plat_lock_blocking(&di->domain_lock);
+        caml_bt_lock_hook(); /* also takes domain_lock */
         msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_ENTERING_OCAML)
           caml_plat_wait(&di->domain_cond, &di->domain_lock);
-        caml_plat_unlock(&di->domain_lock);
+        caml_bt_unlock_hook(); /* also releases domain_lock */
         break;
       default:
         cpu_relax();
@@ -1213,6 +1213,10 @@ CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
 
 CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
   (caml_timing_hook)NULL;
+
+CAMLexport int (*caml_bt_try_domain_lock_hook)(void) = caml_bt_try_domain_lock;
+CAMLexport void (*caml_bt_lock_hook)(void) = caml_acquire_domain_lock;
+CAMLexport void (*caml_bt_unlock_hook)(void) = caml_release_domain_lock;
 
 static void domain_terminate(void);
 
@@ -2009,6 +2013,12 @@ CAMLexport void caml_acquire_domain_lock(void)
   dom_internal* self = domain_self;
   caml_plat_lock_blocking(&self->domain_lock);
   caml_state = self->state;
+}
+
+/* Only called by the backup thread */
+CAMLexport int caml_bt_try_domain_lock(void)
+{
+  return caml_plat_try_lock(&domain_self->domain_lock);
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)

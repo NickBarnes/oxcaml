@@ -82,6 +82,8 @@ struct caml_locking_scheme {
   void* context;
   void (*lock)(void*);
   void (*unlock)(void*);
+  void (*bt_lock)(void*);
+  void (*bt_unlock)(void*);
 
   /* If non-NULL, these functions are called when threads start and stop.
      For threads created by OCaml, that's at creation and termination.

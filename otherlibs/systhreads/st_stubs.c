@@ -76,6 +76,8 @@ static void check_locking_scheme(struct caml_locking_scheme *scheme)
 {
   CAMLassert(scheme->lock != NULL);
   CAMLassert(scheme->unlock != NULL);
+  CAMLassert(scheme->bt_lock != NULL);
+  CAMLassert(scheme->bt_unlock != NULL);
   CAMLassert(scheme->thread_start != NULL);
   CAMLassert(scheme->thread_stop != NULL);
   CAMLassert(scheme->reinitialize_after_fork != NULL);
@@ -235,6 +237,18 @@ static int default_can_skip_yield(void *v)
 {
   st_masterlock *m = v;
   return st_masterlock_waiters(m) == 0;
+}
+
+static void default_bt_lock(void *v)
+{
+  (void)v;
+  /* Do nothing, as we also take the domain lock */
+}
+
+static void default_bt_unlock(void *v)
+{
+  (void)v;
+  /* Do nothing, as we also take the domain lock */
 }
 
 static void default_handle_interrupt(void)
@@ -666,6 +680,8 @@ static void caml_thread_domain_initialize_hook(void)
   ls->context = default_lock;
   ls->lock = &st_masterlock_acquire;
   ls->unlock = &st_masterlock_release;
+  ls->bt_lock = &default_bt_lock;
+  ls->bt_unlock = &default_bt_unlock;
   ls->thread_start = NULL;
   ls->thread_stop = NULL;
   ls->reinitialize_after_fork = (void (*)(void*))&default_reinitialize_after_fork;
@@ -715,6 +731,34 @@ void caml_thread_interrupt_hook(void)
   return;
 }
 
+void caml_thread_bt_lock(void)
+{
+  struct caml_locking_scheme* s = atomic_load(&Locking_scheme(Caml_state->id));
+  s->bt_lock(s->context);
+  /* always acquire the actual domain lock as well */
+  caml_acquire_domain_lock();
+}
+
+int caml_thread_bt_try_domain_lock(void)
+{
+  struct caml_locking_scheme *s = atomic_load(&Locking_scheme(Caml_state->id));
+  s->bt_lock(s->context); /* locking scheme doesn't have a bt_try_lock */
+  /* always try to acquire the actual domain lock as well */
+  int res = caml_bt_try_domain_lock();
+  if (!res) {
+    /* We couldn't acquire the domain lock, so must release the external lock */
+    s->bt_unlock(s->context);
+  }
+  return res;
+}
+
+void caml_thread_bt_unlock(void)
+{
+  struct caml_locking_scheme* s = atomic_load(&Locking_scheme(Caml_state->id));
+  caml_release_domain_lock(); /* always nested inside the custom lock */
+  s->bt_unlock(s->context);
+}
+
 void caml_thread_domain_interrupt_hook(caml_domain_state *domain)
 {
     struct caml_locking_scheme* s = atomic_load(&Locking_scheme(domain->id));
@@ -747,6 +791,9 @@ CAMLprim value caml_thread_initialize(value unit)
                                          caml_thread_scan_roots);
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+  caml_bt_lock_hook = caml_thread_bt_lock;
+  caml_bt_try_domain_lock_hook = caml_thread_bt_try_domain_lock;
+  caml_bt_unlock_hook = caml_thread_bt_unlock;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_interrupt_hook = caml_thread_domain_interrupt_hook;
   caml_domain_spawn_hook = caml_thread_domain_spawn_hook;

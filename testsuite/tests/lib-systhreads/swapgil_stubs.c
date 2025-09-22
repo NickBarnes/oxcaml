@@ -134,6 +134,8 @@ value swap_gil(value unused)
   s->context = m;
   s->lock = runtime_lock;
   s->unlock = runtime_unlock;
+  s->bt_lock = runtime_lock;
+  s->bt_unlock = runtime_unlock;
   s->thread_start = runtime_thread_start;
   s->thread_stop = runtime_thread_stop;
   s->reinitialize_after_fork = runtime_reinitialize;

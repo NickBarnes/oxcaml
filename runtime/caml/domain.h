@@ -86,6 +86,8 @@ CAMLextern void caml_bt_exit_ocaml(void);
 CAMLextern void caml_acquire_domain_lock(void);
 CAMLextern void caml_release_domain_lock(void);
 
+CAMLextern int caml_bt_try_domain_lock(void); /* Only called from backup thread */
+
 /* These hooks are not modified after other domains are spawned. */
 CAMLextern void (*caml_atfork_hook)(void);
 CAMLextern void (*caml_domain_spawn_hook)(void);
@@ -93,6 +95,11 @@ CAMLextern void (*caml_domain_initialize_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 CAMLextern void (*caml_domain_interrupt_hook)(caml_domain_state *);
+
+/* These three only called from backup thread */
+CAMLextern int (*caml_bt_try_domain_lock_hook)(void);
+CAMLextern void (*caml_bt_lock_hook)(void);
+CAMLextern void (*caml_bt_unlock_hook)(void);
 
 CAMLextern void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz);
 CAMLextern void caml_init_domain_self(int);
