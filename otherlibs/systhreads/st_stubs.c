@@ -227,13 +227,15 @@ static value caml_threadstatus_new (void);
 static void caml_threadstatus_terminate (value);
 static st_retcode caml_threadstatus_wait (value);
 
-static int default_can_skip_yield(st_masterlock *m)
+static int default_can_skip_yield(void *v)
 {
+  st_masterlock *m = v;
   return st_masterlock_waiters(m) == 0;
 }
 
-static void default_reinitialize_after_fork(st_masterlock *m)
+static void default_reinitialize_after_fork(void *v)
 {
+  st_masterlock *m = v;
   m->init = 0; /* force initialization */
   /* Note: initializing an already-initialized mutex and cond variable
      is UB (especially mutexes that are locked). This is best
@@ -673,13 +675,13 @@ static void caml_thread_domain_initialize_hook(void)
   sync_check_error(ret, "caml_thread_domain_initialize_hook");
   struct caml_locking_scheme *ls = Default_locking_scheme(Caml_state->id);
   ls->context = default_lock;
-  ls->lock = (void (*)(void*))&st_masterlock_acquire;
-  ls->unlock = (void (*)(void*))&st_masterlock_release;
+  ls->lock = &st_masterlock_acquire;
+  ls->unlock = &st_masterlock_release;
   ls->thread_start = NULL;
   ls->thread_stop = NULL;
   ls->reinitialize_after_fork = (void (*)(void*))&default_reinitialize_after_fork;
-  ls->can_skip_yield = (int (*)(void*))&default_can_skip_yield;
-  ls->yield = (void (*)(void*))&st_thread_yield;
+  ls->can_skip_yield = &default_can_skip_yield;
+  ls->yield = &st_thread_yield;
 
   Locking_scheme(Caml_state->id) = ls;
 

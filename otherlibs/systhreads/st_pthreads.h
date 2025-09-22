@@ -112,8 +112,6 @@ static void st_bt_lock_acquire(st_masterlock *m) {
   }
 
   caml_acquire_domain_lock();
-
-  return;
 }
 
 static void st_bt_lock_release(st_masterlock *m) {
@@ -127,12 +125,11 @@ static void st_bt_lock_release(st_masterlock *m) {
   }
 
   caml_release_domain_lock();
-
-  return;
 }
 
-static void st_masterlock_acquire(st_masterlock *m)
+static void st_masterlock_acquire(void *v)
 {
+  st_masterlock *m = v;
   pthread_mutex_lock(&m->lock);
   while (m->busy) {
     atomic_fetch_add(&m->waiters, +1);
@@ -143,20 +140,17 @@ static void st_masterlock_acquire(st_masterlock *m)
   if (domain_lockmode == LOCKMODE_DOMAINS)
     st_bt_lock_acquire(m);
   pthread_mutex_unlock(&m->lock);
-
-  return;
 }
 
-static void st_masterlock_release(st_masterlock * m)
+static void st_masterlock_release(void *v)
 {
+  st_masterlock *m = v;
   pthread_mutex_lock(&m->lock);
   m->busy = 0;
   if (domain_lockmode == LOCKMODE_DOMAINS)
     st_bt_lock_release(m);
   pthread_mutex_unlock(&m->lock);
   custom_condvar_signal(&m->is_free);
-
-  return;
 }
 
 /* Scheduling hints */
@@ -168,8 +162,9 @@ static void st_masterlock_release(st_masterlock * m)
    off the lock to a waiter we know exists, it's safe, as they'll certainly
    re-wake us later.
 */
-Caml_inline void st_thread_yield(st_masterlock * m)
+Caml_inline void st_thread_yield(void *v)
 {
+  st_masterlock *m = v;
   pthread_mutex_lock(&m->lock);
   /* We must hold the lock to call this. */
 
