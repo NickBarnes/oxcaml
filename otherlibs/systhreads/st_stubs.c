@@ -57,9 +57,7 @@
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
 
-/* Currently, the caml_switch_runtime_locking_scheme mechanism is incompatible
-   with multi-domain programs. To give a reasonable-looking error if both are
-   used at once, we track which (if either) of the features has been used */
+/* When locking, we need to know whether backup threads have started. */
 static enum {
   /* State at startup: neither feature has been used.
      The domain lock remains held by the first systhread of domain 0,
@@ -67,17 +65,10 @@ static enum {
      No backup thread has started. */
   LOCKMODE_STARTUP,
 
-  /* State if caml_switch_runtime_locking_scheme is used.
-     The domain lock remains held by the first systhread of domain 0,
-     and a custom locking scheme is used to provide mutual exclusion of threads.
-     No backup thread has started, nor may one ever start. */
-  LOCKMODE_CUSTOM_SCHEME,
-
   /* State if multiple domains are used.
      The domain lock is held by whichever systhread is running, or by the backup
      thread of the current domain. The st_masterlock is also held by the running
-     systhread. This is the standard OCaml 5 locking mode.
-     caml_switch_runtime_locking_scheme may not be used. */
+     systhread. This is the standard OCaml 5 locking mode. */
   LOCKMODE_DOMAINS
 } domain_lockmode = LOCKMODE_STARTUP;
 
@@ -367,11 +358,7 @@ CAMLexport void caml_switch_runtime_locking_scheme(struct caml_locking_scheme* n
   check_locking_scheme(new);
   struct caml_locking_scheme* old;
   int dom_id = Caml_state->id;
-  if (domain_lockmode == LOCKMODE_DOMAINS)
-    caml_fatal_error("Switching locking scheme is unsupported in multicore programs");
-  CAMLassert (!caml_domain_is_multicore());
   save_runtime_state();
-  domain_lockmode = LOCKMODE_CUSTOM_SCHEME;
   old = atomic_exchange(&Locking_scheme(dom_id), new);
   /* We hold 'old', but it is no longer the runtime lock */
   old->unlock(old->context);
@@ -643,9 +630,6 @@ CAMLprim value caml_thread_use_domains(value unit)
   if (domain_lockmode == LOCKMODE_DOMAINS)
     return Val_unit;
 
-  if (domain_lockmode == LOCKMODE_CUSTOM_SCHEME)
-    caml_failwith("Thread.use_domains cannot be used with a non-default runtime locking scheme.");
-
   CAMLassert(domain_lockmode == LOCKMODE_STARTUP);
   CAMLassert(!caml_domain_is_multicore());
 
@@ -661,21 +645,7 @@ CAMLprim value caml_thread_use_domains(value unit)
 
 static void caml_thread_domain_spawn_hook(void)
 {
-  if (domain_lockmode == LOCKMODE_DOMAINS)
-    return;
-
-  if (domain_lockmode == LOCKMODE_CUSTOM_SCHEME)
-    caml_failwith("Domain.spawn cannot be used with a non-default runtime locking scheme.");
-
-  CAMLassert(domain_lockmode == LOCKMODE_STARTUP);
-  CAMLassert(!caml_domain_is_multicore());
-
-  if (threads_initialized && !This_thread->is_main)
-    caml_failwith("Domain.spawn: first use must be from the main thread.");
-
-  /* We are on the main thread, so we hold the domain_lock,
-     so we can switch lockmode */
-  domain_lockmode = LOCKMODE_DOMAINS;
+  return;
 }
 
 /* FIXME: this should return an encoded exception for use in
