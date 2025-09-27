@@ -904,11 +904,24 @@ let components_of_module ~alerts ~uid env ps path addr mty shape =
     }
   }
 
+(* Maintain the same physical name for .cmi names even across type-checker
+   resets. In particular, this means that lazy thunks (e.g. in Matching) do not
+   need to be reset as persistent names in identifiers in those lambda blocks
+   will be physically identical across type-checker resets.
+   See also tests in testsuite/tests/tool-ocamlc-determinism *)
+let hashcons_name =
+  let names = String.Tbl.create 1023 in
+  fun name ->
+    try String.Tbl.find names name
+    with Not_found ->
+      String.Tbl.add names name name;
+      name
+
 let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
   let flags = cmi.cmi_flags in
-  let id = Ident.create_persistent name in
+  let id = Ident.create_persistent (hashcons_name name) in
   let path = Pident id in
   let alerts =
     List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
