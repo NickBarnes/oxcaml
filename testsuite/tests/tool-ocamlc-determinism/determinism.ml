@@ -1,7 +1,7 @@
 (* TEST
  include ocamlcommon;
  include ocamlbytecomp;
- readonly_files = "test_module.ml test_module.mli";
+ readonly_files = "test_module.ml test_module.mli trigger_lazy.ml";
  setup-ocamlc.byte-build-env;
 
  (* First compilation: .mli and .ml separately *)
@@ -17,7 +17,7 @@
 
 
  (* Second compilation: all files together *)
- all_modules = "test_module.mli test_module.ml";
+ all_modules = "trigger_lazy.ml test_module.mli test_module.ml";
  ocamlc.byte;
  src = "test_module.cmo";
  dst = "test_module_with_mli.cmo";
