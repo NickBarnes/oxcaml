@@ -333,6 +333,9 @@ CAMLexport void caml_switch_runtime_locking_scheme(struct caml_locking_scheme* n
 {
   struct caml_locking_scheme* old;
   int dom_id = Caml_state->id;
+  CAMLassert(new != Default_locking_scheme(dom_id));
+  CAMLassert(new->magic == CAML_RUNTIME_LOCKING_SCHEME_MAGIC);
+
   save_runtime_state();
   old = atomic_exchange(&Locking_scheme(dom_id), new);
   /* We hold 'old', but it is no longer the runtime lock */
@@ -341,9 +344,13 @@ CAMLexport void caml_switch_runtime_locking_scheme(struct caml_locking_scheme* n
   restore_runtime_state(This_thread);
 }
 
-CAMLexport struct caml_locking_scheme* caml_get_default_locking_scheme(void)
+CAMLexport struct caml_locking_scheme *caml_copy_default_locking_scheme(void)
 {
-  return Default_locking_scheme(Caml_state->id);
+  struct caml_locking_scheme *s = caml_stat_alloc(sizeof(struct caml_locking_scheme));
+  if (s) { /* copy in the default struct */
+    *s = *Default_locking_scheme(Caml_state->id);
+  }
+  return s;
 }
 
 CAMLprim value caml_thread_cleanup(value unit);
@@ -638,6 +645,14 @@ static void caml_thread_domain_initialize_hook(void)
   new_thread->is_main = 1;
   new_thread->signal_stack = NULL;
 
+  /* If a domain with this domain ID previously ran, and replaced the
+   * locking scheme, we free it here and revert to the default
+   * scheme. */
+  if (Locking_scheme(Caml_state->id) != Default_locking_scheme(Caml_state->id)) {
+    caml_stat_free(Locking_scheme(Caml_state->id));
+    Locking_scheme(Caml_state->id) = Default_locking_scheme(Caml_state->id);
+  }
+
   This_thread = new_thread;
   Active_thread = new_thread;
   caml_memprof_enter_thread(new_thread->memprof);
@@ -694,6 +709,8 @@ CAMLprim value caml_thread_initialize(value unit)
     ls->reinitialize_after_fork = (void (*)(void*))&default_reinitialize_after_fork;
     ls->can_skip_yield = (int (*)(void*))&default_can_skip_yield;
     ls->yield = (void (*)(void*))&st_thread_yield;
+    ls->send_interrupt = NULL;
+    ls->magic = CAML_RUNTIME_LOCKING_SCHEME_MAGIC;
     Locking_scheme(i) = ls;
   }
 

@@ -68,7 +68,22 @@ CAMLextern_libthreads int caml_c_thread_unregister(void);
    Note that threads registered by C code belong to the domain 0.
 */
 
+#define CAML_RUNTIME_LOCKING_SCHEME_VERSION 1
+#define CAML_RUNTIME_LOCKING_SCHEME_MAGIC \
+  ((uintnat)0x10cc1900 + CAML_RUNTIME_LOCKING_SCHEME_VERSION)
+/*            LOCKIN */
+
 enum caml_thread_type { Thread_type_caml, Thread_type_c_registered };
+
+/* A locking scheme. Each domain has a default locking scheme and a
+ * current locking scheme. The current locking scheme is used to
+ * acquire and release the "domain lock", which controls who can touch
+ * the OCaml heap.
+ *
+ * To change the locking scheme, take a copy of the default scheme
+ * with caml_copy_default_locking_scheme(), update it, and switch to
+ * it with caml_switch_runtime_locking_scheme(). */
+
 struct caml_locking_scheme {
   void* context;
   void (*lock)(void*);
@@ -95,6 +110,8 @@ struct caml_locking_scheme {
   /* If non-NULL, called without the lock held when the runtime urgently
      needs to take the lock to service an interrupt, such as for GC */
   void (*send_interrupt)(void*);
+
+  uintnat magic; /* CAML_RUNTIME_LOCKING_SCHEME_MAGIC */
 };
 
 /* Switch to a new runtime locking scheme.
@@ -106,11 +123,12 @@ struct caml_locking_scheme {
    There is a period during this function when neither lock is held,
    so context-switches may occur. */
 CAMLextern_libthreads
-void caml_switch_runtime_locking_scheme(struct caml_locking_scheme*);
+void caml_switch_runtime_locking_scheme(struct caml_locking_scheme *);
 
-/* Returns the default scheme; caller must hold the lock */
+/* Returns a copy of the default scheme, or NULL if allocation fails.
+ * Caller must hold the lock. */
 CAMLextern_libthreads
-struct caml_locking_scheme *caml_get_default_locking_scheme(void);
+struct caml_locking_scheme *caml_copy_default_locking_scheme(void);
 
 /* Save runtime state of the active thread; caller must hold the lock */
 CAMLextern_libthreads

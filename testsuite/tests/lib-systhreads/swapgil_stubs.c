@@ -120,21 +120,22 @@ static void runtime_reinitialize(void* m)
 
 value swap_gil_setup(value unused)
 {
-  struct caml_locking_scheme *s = caml_get_default_locking_scheme();
+  struct caml_locking_scheme *s = caml_copy_default_locking_scheme();
+  if (!s)
+    return Val_unit;
   s->thread_start = runtime_thread_start;
   s->thread_stop = runtime_thread_stop;
+  caml_switch_runtime_locking_scheme(s);
   started = 1;
   return Val_unit;
 }
 
 value swap_gil(value unused)
 {
-  struct caml_locking_scheme* s;
-  pthread_mutex_t* m;
   pthread_mutexattr_t attr;
 
-  s = malloc(sizeof(*s));
-  m = malloc(sizeof(*m));
+  struct caml_locking_scheme *s = caml_copy_default_locking_scheme();
+  pthread_mutex_t *m = malloc(sizeof(*m));
   pthread_mutexattr_init(&attr);
   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
   pthread_mutex_init(m, &attr);
@@ -146,6 +147,8 @@ value swap_gil(value unused)
   s->reinitialize_after_fork = runtime_reinitialize;
   s->can_skip_yield = NULL;
   s->yield = runtime_yield;
+  s->send_interrupt = NULL;
+  s->magic = CAML_RUNTIME_LOCKING_SCHEME_MAGIC;
   caml_switch_runtime_locking_scheme(s);
   return Val_unit;
 }
