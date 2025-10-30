@@ -907,11 +907,10 @@ and signature ~expansion_token ~env:_ ~before ~ctx sgs =
         suggest_renaming_field ppf (suggested_ident, suggestion.subject)
   in
   Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
-      let suggestions = Signature_matching.suggest sgs in
-      match suggestions with
-      | { alterations = _ :: _; _  } ->
+      match Signature_matching.suggest sgs with
+      | { alterations = _ :: _ as alts ; _  }  ->
           if not expansion_token then before else
-            let init, last = Misc.split_last suggestions.alterations in
+            let init, last = Misc.split_last alts in
             List.map (Location.msg "%a" suggestion_text) init
             @ with_context ctx suggestion_text last
               :: before
