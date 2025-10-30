@@ -280,15 +280,39 @@ module Stable_marriage_diff = struct
 
   type distance = int
 
-  type dequeue = { front: int list; pre:bool; back:int list }
-  let next dq = match dq.front with
-    | a :: front -> Some (a, { dq with front })
-    | [] -> match List.rev dq.back with
-      | [] -> None
-      | a :: front -> Some (a, { front; pre=false; back = [] })
-  let push_back dq x = { dq with back = x :: dq.back }
+  module Tie_list = struct
+    (* List of element tied at a given distance in the global preference list *)
+    type t =
+      | First_round of { front: int list; second_round:int list }
+       (* During the first round, the list of ties is split in two:
+         - [front], possibly unpaired left element
+         - [second_round] certainly paired left elements
+      *)
 
-  let replace_front x dq = { dq with front = x :: dq.front }
+      | Second_round of int list
+
+    let first_round front second_round = First_round { front; second_round }
+    let in_first_round = function
+      | First_round _ -> true
+      | Second_round _ -> false
+    let next tl = match tl with
+      | Second_round [] -> None
+      | Second_round (a::q) -> Some(a, Second_round q)
+      | First_round ({ front = a :: front; _ } as dq) ->
+          Some (a, First_round { dq with front })
+      | First_round { front = []; second_round } ->
+          match List.rev second_round with
+          | [] -> None
+          | a :: front -> Some (a, Second_round front)
+    let delay_to_second_round tl x = match tl with
+      | First_round dq ->
+          First_round { dq with second_round = x :: dq.second_round }
+      | Second_round _ -> tl
+    let replace_front x = function
+      | First_round dq -> First_round { dq with front = x :: dq.front }
+      | Second_round l -> Second_round (x :: l)
+    let of_list front = First_round { front; second_round = [] }
+  end
 
   type left_state =
     | Left_unpaired
@@ -301,7 +325,7 @@ module Stable_marriage_diff = struct
   type active_right_state = {
     mutable previous_layers : layer list;
         (** Invariant: this list is not empty in the first phase . *)
-    mutable current_layer : dequeue; (** Invariant: this list is not empty. *)
+    mutable current_layer : Tie_list.t;
     mutable current_distance : distance;
     mutable paired: bool;
     mutable phase: right_phase;
@@ -315,47 +339,53 @@ module Stable_marriage_diff = struct
     | Left_unpaired -> true
     | _ -> false
 
-  let rec has_alternative_choices state r =
+  let rec has_alternative_choices ~compatible state ir r =
     let cl = r.current_layer in
-    if not cl.pre then false else
-    match cl.front with
-    | a :: b :: q ->
-       is_never_paired state b ||
+    match cl with
+    | Second_round _ | First_round { front = [] | [_]; _ }-> false
+    | First_round ({ front = a :: b :: q ; _ } as cl) ->
+        if not (compatible b ir) then begin
+          r.current_layer <- First_round { cl with front = a :: q};
+          has_alternative_choices ~compatible state ir r
+        end else
+          is_never_paired state b ||
           let current_layer =
-            { front = a :: q; pre=true; back = b :: cl.back }
+            Tie_list.First_round {
+              front = a :: q;
+              second_round = b :: cl.second_round
+            }
           in
           r.current_layer <- current_layer;
-          has_alternative_choices state r
-    | [_] | [] -> false
+          has_alternative_choices ~compatible state ir r
 
   let rec skip_paired state dq =
-    assert dq.pre;
-    match next dq with
+    assert (Tie_list.in_first_round dq);
+    match Tie_list.next dq with
     | None -> assert false
     | Some (first,others) ->
         if is_never_paired state first then
           first, others
-        else skip_paired state (push_back others first)
+        else skip_paired state (Tie_list.delay_to_second_round others first)
 
-  let has_weak_pair state j =
+  let has_weak_pair ~compatible state j =
     match state.left.(j) with
     | Left_unpaired -> false
     | Left_paired (i, _) ->
         match state.right.(i) with
         | None -> assert false
-        | Some r -> has_alternative_choices state r
+        | Some r -> has_alternative_choices ~compatible state i r
 
   let phase state i =
     Option.map (fun x -> x.phase) state.right.(i)
 
-  let prepare_dequeue state { left_candidates=i; pref=d} r =
-    let pre, later = List.partition (is_never_paired state) i in
-    let dequeue = { front = pre; pre=true; back = later } in
+  let prepare_tie_list state { left_candidates=i; pref=d} r =
+    let first, later = List.partition (is_never_paired state) i in
+    let tie_list = Tie_list.first_round first later in
     match state.right.(r) with
     | None -> ()
     | Some r ->
         r.current_distance <- d;
-        r.current_layer <- dequeue
+        r.current_layer <- tie_list
 
   let second_phase state ir r =
     let layers = List.rev r.previous_layers in
@@ -364,7 +394,7 @@ module Stable_marriage_diff = struct
     match layers with
     | [] -> assert false
     | layer :: q ->
-        prepare_dequeue state layer ir;
+        prepare_tie_list state layer ir;
         r.next_layers <- List.to_seq q
 
   let next_layer state ir r = match r.next_layers () with
@@ -376,48 +406,46 @@ module Stable_marriage_diff = struct
     | Seq.Cons(layer, next_layers) ->
         r.previous_layers <- layer :: r.previous_layers;
         r.next_layers <- next_layers;
-        prepare_dequeue state layer ir;
+        prepare_tie_list state layer ir;
         true
 
-  let rec get_left_candidate state ir r =
+  let rec get_left_candidate ~compatible state ir r =
     assert (r.paired = false);
-    if has_alternative_choices state r then
+    if has_alternative_choices ~compatible state ir r then
       let f, others = skip_paired state r.current_layer in
       r.current_layer <- others;
       Some f
-    else match next r.current_layer with
+    else match Tie_list.next r.current_layer with
       | Some (f,others) ->
           r.current_layer <- others;
           Some f
       | None ->
-          if next_layer state ir r then get_left_candidate state ir r
+          if next_layer state ir r then
+            get_left_candidate ~compatible state ir r
           else None
 
-  let rec get_compatible_left_candidate compatibility state ir r =
-    match get_left_candidate state ir r with
+  let rec get_compatible_left_candidate ~compatible state ir r =
+    match get_left_candidate ~compatible state ir r with
     | None -> None
     | Some l as c ->
-        if compatibility l ir then c
+        if compatible l ir then c
         else
-          get_compatible_left_candidate compatibility state ir r
+          get_compatible_left_candidate ~compatible state ir r
 
   let reject state i =
     match state.right.(i) with
     | None -> ()
     | Some right ->
-    right.paired <- false;
-    match next right.current_layer with
-    | None -> state.right.(i) <- None
-    | Some (f,others) ->
-        let dequeue = if others.pre then
-            push_back others f
-          else others
-        in
-        right.current_layer <- dequeue;
-        state.reactivated <- i :: state.reactivated
+        right.paired <- false;
+        match Tie_list.next right.current_layer with
+        | None -> state.right.(i) <- None
+        | Some (f,others) ->
+            let tie_list = Tie_list.delay_to_second_round others f in
+            right.current_layer <- tie_list;
+            state.reactivated <- i :: state.reactivated
 
-  let accepted_proposal state i j d =
-    has_weak_pair state j ||
+  let accepted_proposal ~compatible state i j d =
+    has_weak_pair ~compatible state j ||
     match state.left.(j) with
     | Left_unpaired -> true
     | Left_paired (i', d') ->
@@ -432,15 +460,13 @@ module Stable_marriage_diff = struct
     | None -> ()
     | Some r ->
       r.paired <- true;
-      r.current_layer <- replace_front j r.current_layer
+      r.current_layer <- Tie_list.replace_front j r.current_layer
     end;
     match state.left.(j) with
     | Left_unpaired -> state.left.(j) <- Left_paired (i, d)
     | Left_paired (i', _) ->
         reject state i';
         state.left.(j) <- Left_paired (i, d)
-
-  let d_of_list front = { front; pre=true; back = [] }
 
   let init_right_state ~preferences right =
     Array.map
@@ -454,7 +480,7 @@ module Stable_marriage_diff = struct
                paired = false;
                phase = First;
                current_distance = layer.pref;
-               current_layer = d_of_list layer.left_candidates;
+               current_layer = Tie_list.of_list layer.left_candidates;
                previous_layers = [layer];
                next_layers = tail;
              }
@@ -462,16 +488,16 @@ module Stable_marriage_diff = struct
       right
 
 
-  let rec proposals compatibility state i right =
-    match get_compatible_left_candidate compatibility state i right with
+  let rec proposals ~compatible state i right =
+    match get_compatible_left_candidate ~compatible state i right with
     | None -> ()
     | Some j ->
-        if accepted_proposal state i j right.current_distance then
+        if accepted_proposal ~compatible state i j right.current_distance then
           pair state i j right.current_distance
         else
-          proposals compatibility state i right
+          proposals ~compatible state i right
 
-  let diff ~preferences ~compatibility left right =
+  let diff ~preferences ~compatible left right =
     let preferences = preferences left in
     let n = Array.length left in
     let m = Array.length right in
@@ -488,7 +514,7 @@ module Stable_marriage_diff = struct
         match state.right.(i) with
           | None -> loop l
           | Some right ->
-              proposals compatibility state i right;
+              proposals ~compatible state i right;
               loop l
     in
     loop (List.init m Fun.id);
@@ -513,14 +539,14 @@ module Stable_marriage_diff = struct
       pairs = List.of_seq pairs;
     }
 
-  let diff ~preferences ~compatibility left right =
+  let diff ~preferences ~compatible left right =
     if Array.length right >  Array.length left then
       diff
         ~preferences
-        ~compatibility:(fun a b -> compatibility b a)
+        ~compatible:(fun a b -> compatible b a)
         right left
       |> reverse_matches
-    else diff ~preferences ~compatibility left right
+    else diff ~preferences ~compatible left right
 
 end
 
@@ -620,15 +646,12 @@ let fuzzy_match_names ~compatibility left0 right =
     (* Stable marriages. *)
     let left = Array.of_list left0 in
     let right = Array.of_list right in
-    let compatibility i j =
+    let compatible i j =
       compatibility (Item.kind left.(i)) (Item.kind right.(j))
     in
     let preferences = preferences ~cutoff in
     let matches =
-      Stable_marriage_diff.diff
-        ~preferences ~compatibility
-        left
-        right
+      Stable_marriage_diff.diff ~preferences ~compatible left right
     in
     let pairs = List.map (fun (x,y) -> Item.(item x, item y)) matches.pairs in
     { matches with pairs }
