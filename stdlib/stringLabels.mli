@@ -451,6 +451,76 @@ val rindex_opt : string -> char -> int option
 
     @since 4.05 *)
 
+(** {1:find_subs Finding substrings} *)
+
+val find_first :
+  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> int option
+(** [find_first ~sub ~start s] is the starting position of the first
+    occurrence of [sub] in [s] at or after the index or position [start]
+    (defaults to [0]).
+
+    If [sub] is [""] the result is [Some start]. The result of the
+    function is always a valid index of [s] except when [sub] is
+    [""] and [start] is [length s].
+
+    If you need to search for [sub] multiple times in [s] it is more
+    efficient to use {!find_all}.
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
+
+val find_last :
+  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> int option
+(** [find_last ~sub ~start s] is the starting position of the last
+    occurrence of [sub] in [s] at or before the index or position
+    [start] (defaults to [String.length s]).
+
+    If [sub] is [""] the result is [Some start]. The result of the
+    function is always a valid index of [s] except when [sub] is
+    [""] and [start] is [length s].
+
+    If you need to search for [sub] multiple times in [s] it is more
+    efficient to use {!rfind_all}.
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
+
+val find_all :
+  f:(int -> 'acc -> 'acc) ->
+  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> 'acc -> 'acc
+(** [find_all f ~sub ~start s acc], starting with [acc], folds [f]
+    over all non-overlapping starting positions of [sub] in [s] at or
+    after the index or position [start] (defaults to [0]). The
+    result is [acc] if [sub] could not be found in [s].
+
+    If [sub] is [""], [f] gets invoked on all positions of [s] at or after
+    [start].
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
+
+val rfind_all :
+  f:(int -> 'acc -> 'acc) ->
+  sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  ?start:int -> string -> 'acc -> 'acc
+(** [rfind_all f ~sub ~start s acc], starting with [acc], folds [f]
+    over all non-overlapping starting positions of [sub] in [s] at or
+    before the index or position [start] (defaults to [String.length
+    s]). The result is [acc] if [sub] could not be found in [s].
+
+    If [sub] is [""], [f] gets invoked on on all positions of [s] at
+    or before [start].
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
+
 (** {1 Strings and Sequences} *)
 
 val to_seq : t -> char Seq.t
