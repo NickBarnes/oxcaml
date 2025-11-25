@@ -117,6 +117,27 @@ let escaped s =
      its argument. *)
   if b == b' then s else bts b'
 
+(* Finding indices *)
+
+let invalid_start ~start len =
+  let i = string_of_int in
+  invalid_arg @@ concat "" ["start: "; i start; " not in range [0;"; i len; "]"]
+
+let find_first_index sat ?(start = 0) s =
+  let len = length s in
+  if not (0 <= start && start <= len) then invalid_start ~start len else
+  let i = ref start in
+  while !i < len && not (sat (unsafe_get s !i)) do incr i done;
+  if !i < len then Some !i else None
+
+let find_last_index sat ?start s =
+  let len = length s in
+  let start = match start with None -> len | Some s -> s in
+  if not (0 <= start && start <= len) then invalid_start ~start len else
+  let i = ref (if start = len then len - 1 else start) in
+  while !i >= 0 && not (sat (unsafe_get s !i)) do decr i done;
+  if !i < 0 then None else Some !i
+
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
@@ -194,6 +215,8 @@ let rcontains_from s i c =
     invalid_arg "String.rcontains_from / Bytes.rcontains_from"
   else
     try ignore (rindex_rec s i c); true with Not_found -> false
+
+(* ASCII transforms *)
 
 let uppercase_ascii s =
   B.uppercase_ascii (bos s) |> bts

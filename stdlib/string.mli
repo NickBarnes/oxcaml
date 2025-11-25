@@ -385,7 +385,27 @@ val iteri : (int -> char -> unit) -> string -> unit
 
     @since 4.00 *)
 
-(** {1:searching Searching} *)
+(** {1:finding_indices Finding indices} *)
+
+val find_first_index : (char -> bool) -> ?start:int -> string -> int option
+(** [find_first_index p start s] is the index of the first character
+    of [s] that satisfies predicate [p] at or after the index or
+    position [start] (defaults to [0]).
+
+    If [start] is [length s], the result is always [None].
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
+
+val find_last_index : (char -> bool) -> ?start:int -> string -> int option
+(** [find_last_index p start s] is the index of the last character of
+    [s] that satisfies predicate [p] at or before the index or
+    position [start] (defaults to [length s]).
+
+    @raise Invalid_argument if [start] is not a valid position of [s].
+
+    @since 5.5 *)
 
 val index_from : string -> int -> char -> int
 (** [index_from s i c] is the index of the first occurrence of [c] in
@@ -393,7 +413,6 @@ val index_from : string -> int -> char -> int
 
     @raise Not_found if [c] does not occur in [s] after position [i].
     @raise Invalid_argument if [i] is not a valid position in [s]. *)
-
 
 val index_from_opt : string -> int -> char -> int option
 (** [index_from_opt s i c] is the index of the first occurrence of [c]

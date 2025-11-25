@@ -263,4 +263,43 @@ let () =
   (* Test String.is_empty *)
   assert (String.is_empty "life" = false);
   assert (String.is_empty "" = true);
+
+let () =
+  (* Test String.find_{first,last}_index *)
+  let is_letter = Char.Ascii.is_letter in
+  let is_invalid_arg f = match f () with
+    | exception Invalid_argument _ -> () | _ -> assert false
+  in
+  is_invalid_arg (fun () -> String.find_first_index ~start:(-1) is_letter "");
+  is_invalid_arg (fun () -> String.find_last_index ~start:(-1) is_letter "");
+  assert (String.find_first_index ~start:0 is_letter "" = None);
+  assert (String.find_last_index ~start:0 is_letter "" = None);
+  is_invalid_arg (fun () -> String.find_first_index ~start:1 is_letter "");
+  is_invalid_arg (fun () -> String.find_last_index ~start:1 is_letter "");
+  assert (String.find_first_index ~start:0 is_letter "-" = None);
+  assert (String.find_first_index ~start:1 is_letter "-" = None);
+  assert (String.find_last_index ~start:0 is_letter "-" = None);
+  assert (String.find_last_index ~start:1 is_letter "-" = None);
+  assert (String.find_first_index ~start:0 is_letter "a-" = Some 0);
+  assert (String.find_first_index ~start:1 is_letter "a-" = None);
+  assert (String.find_first_index ~start:2 is_letter "a-" = None);
+  assert (String.find_last_index ~start:0 is_letter "a-" = Some 0);
+  assert (String.find_last_index ~start:1 is_letter "a-" = Some 0);
+  assert (String.find_last_index ~start:2 is_letter "a-" = Some 0);
+  assert (String.find_first_index ~start:0 is_letter "a-a" = Some 0);
+  assert (String.find_first_index ~start:1 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:2 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:3 is_letter "a-a" = None);
+  assert (String.find_last_index ~start:0 is_letter "a-a" = Some 0);
+  assert (String.find_last_index ~start:1 is_letter "a-a" = Some 0);
+  assert (String.find_last_index ~start:2 is_letter "a-a" = Some 2);
+  assert (String.find_last_index ~start:3 is_letter "a-a" = Some 2);
+  assert (String.find_first_index ~start:0 is_letter "-a-" = Some 1);
+  assert (String.find_first_index ~start:1 is_letter "-a-" = Some 1);
+  assert (String.find_first_index ~start:2 is_letter "-a-" = None);
+  assert (String.find_first_index ~start:3 is_letter "-a-" = None);
+  assert (String.find_last_index ~start:0 is_letter "-a-" = None);
+  assert (String.find_last_index ~start:1 is_letter "-a-" = Some 1);
+  assert (String.find_last_index ~start:2 is_letter "-a-" = Some 1);
+  assert (String.find_last_index ~start:3 is_letter "-a-" = Some 1);
   ()
