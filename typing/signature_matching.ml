@@ -48,6 +48,9 @@ end
 
 let max_right_items = 20
 let cutoff name =
+  (* The edit distance between an existing name and a suggested rename must be
+     at most a quarter of the length of the name for large names. For small
+     names, we use a hand-chosen smaller cutoff.*)
   match String.length name with
   | 0 | 1 -> 0 (* Proposing to rename "x" to "y" is dubious. *)
   | 2 | 3 | 4 -> 1

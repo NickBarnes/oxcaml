@@ -352,9 +352,6 @@ let rec cut_at before pos l =
     | a :: q -> cut_at (a::before) (pos-1) q
 
 let fuzzy_match_names ~compatibility ~max_right_items ~cutoff left right =
-  (* The edit distance between an existing name and a suggested rename must be
-     at most a quarter of the length of the name for large names. For small
-     names, we use a hand-chosen smaller cutoff.*)
   let right_pairing, right_rest = cut_at [] max_right_items right in
   let left = Array.of_list left in
   let right = Array.of_list right_pairing in
