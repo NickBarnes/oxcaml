@@ -8,8 +8,6 @@
 #include <caml/mlvalues.h>
 #include "misc_internals.h"
 
-#define ARR_SIZE(a)    (sizeof(a) / sizeof(*(a)))
-
 #if defined(__APPLE__)
 #define RE_FUNC_NAME "^[[:digit:]]+[[:space:]]+[[:alnum:]_\\.]+[[:space:]]+0x[[:xdigit:]]+[[:space:]]([[:alnum:]_\\$]+).*$"
 #else
@@ -54,12 +52,12 @@ static regmatch_t func_name_from_symbol(const char* symbol)
 
   err = regcomp(&regex, RE_FUNC_NAME, REG_EXTENDED);
   if (err) {
-    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    regerror(err, &regex, errbuf, countof(errbuf));
     fprintf(stderr, "regcomp: %s\n", errbuf);
     return match[0];
   }
 
-  err = regexec(&regex, symbol, ARR_SIZE(match), match, 0);
+  err = regexec(&regex, symbol, countof(match), match, 0);
   if (err == REG_NOMATCH)
     return match[0];
 
@@ -81,13 +79,13 @@ static regmatch_t trim_func_name(const char* symbol, const regmatch_t* funcname)
 
   err = regcomp(&regex, RE_TRIM_FUNC, REG_EXTENDED);
   if (err) {
-    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    regerror(err, &regex, errbuf, countof(errbuf));
     fprintf(stderr, "regcomp: %s\n", errbuf);
     return match[0];
   }
 
   match[0] = *funcname;
-  err = regexec(&regex, symbol, ARR_SIZE(match), match, REG_STARTEND);
+  err = regexec(&regex, symbol, countof(match), match, REG_STARTEND);
   if (err == REG_NOMATCH) {
     /* match[0] has already been overwritten to hold the function full name for
        regexec */

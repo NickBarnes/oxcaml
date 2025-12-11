@@ -85,7 +85,7 @@ static int exec_file(wchar_t *file, wchar_t *cmdline)
   PROCESS_INFORMATION procinfo;
   DWORD retcode;
 
-  if (SearchPath(NULL, file, L".exe", sizeof(truename)/sizeof(wchar_t),
+  if (SearchPath(NULL, file, L".exe", countof(truename),
                  truename, NULL)) {
     /* Need to ignore ctrl-C and ctrl-break, otherwise we'll die and take the
        underlying OCaml program with us! */

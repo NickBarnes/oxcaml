@@ -83,7 +83,7 @@ CAMLnoret static void caml_win32_sys_error(int errnum)
                     errnum,
                     0,
                     buffer,
-                    sizeof(buffer)/sizeof(wchar_t),
+                    countof(buffer),
                     NULL)) {
     msg = caml_copy_string_of_utf16(buffer);
   } else {
@@ -558,7 +558,7 @@ static LONG CALLBACK
       faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
-      alt_esp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      alt_esp  = win32_alt_stack + countof(win32_alt_stack);
       *--alt_esp = faulting_address;
       *ctx_sp = (uintnat) (alt_esp - 1);
       *ctx_ip = (uintnat) &caml_reset_stack;
@@ -590,7 +590,7 @@ static LONG CALLBACK
       Caml_state->young_ptr = (value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
-      alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      alt_rsp  = win32_alt_stack + countof(win32_alt_stack);
       ctx->Rcx = faulting_address;
       ctx->Rsp = (uintnat) (alt_rsp - 4 - 1);
       ctx->Rip = (uintnat) &caml_reset_stack;

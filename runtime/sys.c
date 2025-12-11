@@ -398,7 +398,7 @@ CAMLprim value caml_sys_getcwd(value unit)
   char_os buff[4096];
   char_os * ret;
 #ifdef HAS_GETCWD
-  ret = getcwd_os(buff, sizeof(buff)/sizeof(*buff));
+  ret = getcwd_os(buff, countof(buff));
 #else
   caml_invalid_argument("Sys.getcwd not implemented");
 #endif /* HAS_GETCWD */
