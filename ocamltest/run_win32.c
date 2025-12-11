@@ -32,6 +32,7 @@
 
 #include "caml/memory.h"
 #include "caml/osdeps.h"
+#include "misc_internals.h"
 
 #include "run.h"
 #include "run_common.h"

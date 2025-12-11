@@ -22,6 +22,7 @@
 #include <caml/alloc.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 
 CAMLprim value caml_unix_error_message(value err)
 {

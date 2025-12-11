@@ -22,6 +22,8 @@
   #define NORETURN _Noreturn
 #endif
 
+#include "misc_internals.h"
+
 #include <errno.h>
 
 #ifdef _WIN32

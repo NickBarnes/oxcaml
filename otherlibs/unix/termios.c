@@ -17,6 +17,7 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 
 #ifdef HAS_TERMIOS
 

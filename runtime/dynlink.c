@@ -40,7 +40,7 @@
 #include "caml/signals.h"
 #include "caml/intext.h"
 #include "caml/startup.h"
-
+#include "misc_internals.h"
 #include "build_config.h"
 
 #ifndef O_BINARY

@@ -54,7 +54,7 @@
 #include "caml/winsupport.h"
 #include "caml/startup_aux.h"
 #include "caml/platform.h"
-
+#include "misc_internals.h"
 #include "caml/config.h"
 
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)

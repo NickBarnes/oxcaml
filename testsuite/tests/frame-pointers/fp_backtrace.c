@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <caml/mlvalues.h>
+#include "misc_internals.h"
 
 #define ARR_SIZE(a)    (sizeof(a) / sizeof(*(a)))
 

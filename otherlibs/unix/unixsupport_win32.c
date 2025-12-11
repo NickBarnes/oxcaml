@@ -26,6 +26,7 @@
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
+#include "misc_internals.h"
 #include <errno.h>
 
 /* Heap-allocation of Windows file handles */

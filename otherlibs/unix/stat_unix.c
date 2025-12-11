@@ -26,6 +26,7 @@
 #include <caml/io.h>
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
+#include "misc_internals.h"
 
 #ifndef S_IFLNK
 #define S_IFLNK 0

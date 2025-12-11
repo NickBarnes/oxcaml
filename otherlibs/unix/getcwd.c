@@ -20,6 +20,7 @@
 #include <caml/fail.h>
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
+#include "misc_internals.h"
 
 #if !defined(_WIN32)
 #include <sys/param.h>

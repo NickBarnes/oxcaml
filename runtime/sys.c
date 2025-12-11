@@ -66,6 +66,7 @@
 #include "caml/startup_aux.h"
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
+#include "misc_internals.h"
 
 CAMLexport char * caml_strerror(int errnum, char * buf, size_t buflen)
 {

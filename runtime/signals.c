@@ -36,6 +36,7 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
+#include "misc_internals.h"
 
 /* The set of pending signals (received but not yet processed).
    It is represented as a bit vector.
