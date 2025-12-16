@@ -44,6 +44,10 @@ val stable_matches:
   distance:(int -> int -> int) -> (_,int) matches ->
   (unit, unstable_matching) Result.t
 
+val strong_stable_matches:
+  distance:(int -> int -> int) -> (_,int) matches ->
+  (unit, unstable_matching) Result.t
+
 module Gale_Shapley: sig
 
   val matches:

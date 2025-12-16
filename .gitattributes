@@ -133,7 +133,7 @@ testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab
 testsuite/tests/tool-toplevel/multi_phrase_line.ml      typo.very-long-line
-testsuite/tests/misc/stable_matching.ml                 typo.non-ascii
+testsuite/tests/misc/stable_matching_test.ml            typo.non-ascii
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune

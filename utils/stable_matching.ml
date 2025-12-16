@@ -50,7 +50,7 @@ type unstable_matching = {
   optimal: rank * rank
 }
 
-let symmetric_stable_match ~distance ((l,r),(l',r')) =
+let symmetric_strong_stable_match ~distance ((l,r),(l',r')) =
   let l_r_to_l'_r = order (distance l r) (distance l' r) in
   let l'_r'_to_l_r' = order (distance l' r') (distance l r') in
   match l_r_to_l'_r, l'_r'_to_l_r' with
@@ -62,6 +62,20 @@ let symmetric_stable_match ~distance ((l,r),(l',r')) =
         current_rank = distance l r, distance l' r';
         optimal = distance l' r, distance l r'
       }
+
+let symmetric_weak_stable_match ~distance ((l,r),(l',r')) =
+  let l_r_to_l'_r = order (distance l r) (distance l' r) in
+  let l'_r'_to_l_r' = order (distance l' r') (distance l r') in
+  match l_r_to_l'_r, l'_r'_to_l_r' with
+  | Change, Change ->
+      Error {
+        first = l,r;
+        second =  l',r';
+        current_rank = distance l r, distance l' r';
+        optimal = distance l' r, distance l r'
+      }
+  | _ -> Ok ()
+
 
 
 let edit_distance ~cutoff name i r =
@@ -95,17 +109,24 @@ let rec group_by current acc pos a () =
       )
 let group_by a = group_by 0 [] 0 a
 
-let stable_matches ~distance matches  =
+let gen_stable_matches variant ~distance matches  =
   let s = List.to_seq matches.pairs in
   let s = Seq.product s s in
   let find_error ppair =
-    match symmetric_stable_match ~distance ppair with
+    match variant ~distance ppair with
     | Error e -> Some e
     | Ok () -> None
   in
   match Seq.find_map find_error s with
   | Some e -> Error e
   | None -> Ok ()
+
+let stable_matches ~distance matches =
+  gen_stable_matches symmetric_weak_stable_match ~distance matches
+
+let strong_stable_matches ~distance matches =
+  gen_stable_matches symmetric_strong_stable_match ~distance matches
+
 
 module Gale_Shapley = struct
 
