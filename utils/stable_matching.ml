@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type layer = { left_candidates: int list; pref:int }
+type left_index = int
+type right_index = int
+type rank = int
+type layer = { left_candidates: left_index list; pref:rank }
+
+
 
 type ('a,'v) matches = {
   left : 'a list;
@@ -34,6 +39,156 @@ module Item = struct
 end
 type nonrec ('v,'k) item_matches =  (('v,'k) Item.t, 'v) matches
 
+type ord = Keep | Eq | Change
+
+let order x y = if x < y then Keep else if x = y then Eq else Change
+
+type unstable_matching = {
+  first:left_index * right_index;
+  second: left_index * right_index;
+  current_rank: rank * rank;
+  optimal: rank * rank
+}
+
+let symmetric_stable_match ~distance ((l,r),(l',r')) =
+  let l_r_to_l'_r = order (distance l r) (distance l' r) in
+  let l'_r'_to_l_r' = order (distance l' r') (distance l r') in
+  match l_r_to_l'_r, l'_r'_to_l_r' with
+  | Keep, _ | _, Keep | Eq, Eq -> Ok ()
+  | Change, Eq | Change, Change | Eq, Change ->
+      Error {
+        first = l,r;
+        second =  l',r';
+        current_rank = distance l r, distance l' r';
+        optimal = distance l' r, distance l r'
+      }
+
+
+let edit_distance ~cutoff name i r =
+  let cutoff = cutoff name in
+  let r = String.edit_distance ~limit:(1 + cutoff) name @@ Item.name r in
+  if r > cutoff then None else Some (i,r)
+
+let simple_preferences ~distance left name =
+  let a =
+    Array.of_seq
+    @@ Seq.filter_map Fun.id
+    @@ Seq.mapi (distance name)
+    @@ Array.to_seq left in
+  let () = Array.sort (fun (_,n) (_,n') -> Int.compare n n') a in
+  a
+
+let rec group_by current acc pos a () =
+  if pos >= Array.length a then
+    match acc with
+    | [] -> Seq.Nil
+    | _ -> Seq.Cons ({ left_candidates=acc; pref=current }, Seq.empty)
+  else
+    let x, dist = a.(pos) in
+    if dist = current then
+      group_by current (x::acc) (pos+1) a ()
+    else if acc = [] then
+      group_by dist [x] (pos+1) a ()
+    else
+      Seq.Cons (
+        {left_candidates=acc; pref=current}, group_by dist [x] (pos+1) a
+      )
+let group_by a = group_by 0 [] 0 a
+
+let stable_matches ~distance matches  =
+  let s = List.to_seq matches.pairs in
+  let s = Seq.product s s in
+  let find_error ppair =
+    match symmetric_stable_match ~distance ppair with
+    | Error e -> Some e
+    | Ok () -> None
+  in
+  match Seq.find_map find_error s with
+  | Some e -> Error e
+  | None -> Ok ()
+
+module Gale_Shapley = struct
+
+  type right = {
+    index:right_index;
+    candidate: int;
+    preferences:(left_index * rank) array;
+  }
+
+  let next_candidate r = { r with candidate = r.candidate + 1 }
+
+  type matched_left = { matched_to:right; rank:rank }
+
+  type state = {
+    active: right list;
+    inactive: right_index list;
+    left: matched_left option array;
+  }
+
+  let try_match ~compatible state (r:right) =
+    if r.candidate >= Array.length r.preferences then
+      { state with inactive = r.index :: state.inactive }
+    else
+      let candidate, rank = r.preferences.(r.candidate) in
+      if not (compatible candidate r.index) then
+        { state with active = next_candidate r :: state.active }
+      else match state.left.(candidate) with
+      | None ->
+          state.left.(candidate) <- Some { matched_to=r; rank };
+          state
+      | Some r' ->
+          if r'.rank > rank then
+            let () = state.left.(candidate) <- Some { matched_to=r; rank } in
+            { state with active = next_candidate r'.matched_to :: state.active }
+          else
+            { state with active = next_candidate r :: state.active }
+
+  let rec fix ~compatible state =
+    let state =
+      List.fold_left (try_match ~compatible) { state with active = [] }
+        state.active
+    in
+    match state.active with
+    | [] -> state
+    | _ ->  fix ~compatible state
+
+  let matches ~compatible ~preferences ~size:(n_left, n_right) =
+    let init i = { index=i; candidate = 0; preferences = preferences i } in
+    let active = Array.to_list @@ Array.init n_right init in
+    let left = Array.make n_left None in
+    let state = fix ~compatible { active; inactive = []; left } in
+    let left_and_pairs = state.left |> Array.to_seqi |>
+      Seq.partition_map (function
+          | i,None -> Left i
+          | i, Some m -> Right (i, m.matched_to.index)
+        )
+    in
+    let left, pairs = Pair.map List.of_seq List.of_seq left_and_pairs in
+    { left; pairs; right = state.inactive }
+
+  let fuzzy_match_names ~compatibility ~max_right_items:_ ~cutoff left right =
+    let left, right = Array.of_list left, Array.of_list right in
+    let compatible i j =
+      compatibility (Item.kind left.(i)) (Item.kind right.(j))
+    in
+    let preferences r =
+      simple_preferences ~distance:(edit_distance ~cutoff)
+        left (Item.name right.(r))
+    in
+    let size = Array.length left, Array.length right in
+    let matches = matches ~compatible ~preferences ~size in
+    let distance l r =
+      String.edit_distance (Item.name left.(l)) (Item.name right.(r))
+    in
+    assert (stable_matches ~distance matches = Ok ());
+    let item_pair (i,j) = Item.item left.(i), Item.item right.(j) in
+    {
+      left = List.map (fun i -> left.(i)) matches.left;
+      pairs = List.map item_pair matches.pairs;
+      right = List.map (fun i -> right.(i)) matches.right
+    }
+
+end
 
 (** An implementation (in [diff]) of Zoltan Kiraly's "New Algorithm," presented
     in "Linear Time Local Approximation Algorithm for Maximum Stable Marriage":
@@ -245,11 +400,10 @@ module Stable_marriage_diff = struct
         reject state i';
         state.left.(j) <- Left_paired (i, d)
 
-  let init_right_state ~preferences right =
-    Array.map
-      (fun right_field ->
-         let name = Item.name right_field in
-         let sequence = preferences name in
+  let init_right_state ~preferences right_size =
+    Array.init right_size
+      (fun r ->
+         let sequence = preferences r in
          match sequence () with
          | Seq.Nil -> None
          | Seq.Cons (layer, tail) ->
@@ -262,7 +416,6 @@ module Stable_marriage_diff = struct
                next_layers = tail;
              }
       )
-      right
 
 
   let rec proposals ~compatible state i right =
@@ -274,12 +427,10 @@ module Stable_marriage_diff = struct
         else
           proposals ~compatible state i right
 
-  let diff ~preferences ~compatible left right =
-    let preferences = preferences left in
-    let n = Array.length left in
-    let m = Array.length right in
-    let left_state = Array.make n Left_unpaired in
-    let right_state = init_right_state ~preferences right in
+  let matches ~compatible ~preferences ~size:(lsize,rsize) =
+    let left_state = Array.make lsize Left_unpaired in
+    let preferences r = group_by (preferences r) in
+    let right_state = init_right_state ~preferences rsize in
     let state = { left=left_state; reactivated = []; right=right_state } in
     let rec loop = function
       | [] ->
@@ -294,62 +445,45 @@ module Stable_marriage_diff = struct
               proposals ~compatible state i right;
               loop l
     in
-    loop (List.init m Fun.id);
-    let left_final = Seq.zip (Array.to_seq left) (Array.to_seq state.left) in
-    let left, pairs = Seq.partition_map (fun (field, status) ->
+    loop (List.init rsize Fun.id);
+    let left, pairs = Seq.partition_map (fun (l, status) ->
         match status with
-        | Left_unpaired -> Either.Left field
-        | Left_paired (i,_) ->
-            Either.Right (field, right.(i))
-      ) left_final
+        | Left_unpaired -> Either.Left l
+        | Left_paired (r,_) ->
+            Either.Right (l, r)
+      ) (Array.to_seqi left_state)
+    in
+    let unpaired (r,st) =
+      match st with
+      | Some rs -> if rs.paired then None else Some r
+      | None -> Some r
     in
     {
       left = List.of_seq left;
-      right =
-        Array.to_seq right
-        |> Seq.filteri (fun i _ ->
-          match state.right.(i) with
-          | Some r -> not r.paired
-          | None -> true)
-        |> List.of_seq
-      ;
       pairs = List.of_seq pairs;
+      right = List.of_seq (Seq.filter_map unpaired @@ Array.to_seqi state.right)
+    }
+
+  let diff ~preferences ~compatible left right =
+    let preferences = preferences left in
+    let size =  Array.length left, Array.length right in
+    let matches = matches ~compatible ~preferences ~size in
+    let item_pair (l,r) = Item.item left.(l), Item.item right.(r) in
+    {
+      left = List.map (fun l -> left.(l)) matches.left;
+      right = List.map (fun r -> right.(r)) matches.right;
+      pairs = List.map item_pair matches.pairs;
     }
 
 end
-
-let preferences ~cutoff left name =
-  let cutoff = 1 + cutoff name in
-  let a =
-    Array.of_seq
-    @@ Seq.filter (fun (_,d) -> d < cutoff)
-    @@ Seq.mapi (fun i r ->
-        i, String.edit_distance ~limit:cutoff name @@ Item.name r)
-    @@ Array.to_seq left in
-  let () = Array.sort (fun (_,n) (_,n') -> Int.compare n n') a in
-  let rec group_by current acc pos () =
-    if pos >= Array.length a then
-      match acc with
-      | [] -> Seq.Nil
-      | _ -> Seq.Cons ({ left_candidates=acc; pref=current }, Seq.empty)
-    else
-      let x, dist = a.(pos) in
-      if dist = current then
-        group_by current (x::acc) (pos+1) ()
-      else if acc = [] then
-        group_by dist [x] (pos+1) ()
-      else
-        Seq.Cons (
-          {left_candidates=acc; pref=current}, group_by dist [x] (pos+1)
-        )
-  in
-  group_by 0 [] 0
 
 let rec cut_at before pos l =
   if pos <= 0 then List.rev before, l
   else match l with
     | [] -> List.rev before, []
     | a :: q -> cut_at (a::before) (pos-1) q
+
+let matches = Stable_marriage_diff.matches
 
 let fuzzy_match_names ~compatibility ~max_right_items ~cutoff left right =
   let right_pairing, right_rest = cut_at [] max_right_items right in
@@ -358,12 +492,11 @@ let fuzzy_match_names ~compatibility ~max_right_items ~cutoff left right =
     let compatible i j =
       compatibility (Item.kind left.(i)) (Item.kind right.(j))
     in
-    let preferences = preferences ~cutoff in
+    let preferences left r =
+      simple_preferences ~distance:(edit_distance ~cutoff)
+        left (Item.name right.(r))
+    in
     let matches =
       Stable_marriage_diff.diff ~preferences ~compatible left right
     in
-    {
-      pairs = List.map (fun (x,y) -> Item.(item x, item y)) matches.pairs;
-      left = matches.left;
-      right = matches.right @ right_rest
-    }
+    { matches with right = matches.right @ right_rest }

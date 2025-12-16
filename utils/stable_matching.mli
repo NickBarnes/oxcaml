@@ -22,12 +22,49 @@ module Item: sig
   val item: ('v,'k) t -> 'v
 end
 
+type left_index = int
+type right_index = int
+type rank = int
+
 type ('a,'v) matches = {
   left: 'a list;
   pairs:('v * 'v) list;
   right:'a list;
 }
 type ('v,'k) item_matches =  (('v,'k) Item.t, 'v) matches
+
+type unstable_matching = {
+  first:left_index * right_index;
+  second: left_index * right_index;
+  current_rank: rank * rank;
+  optimal: rank * rank
+}
+
+val stable_matches:
+  distance:(int -> int -> int) -> (_,int) matches ->
+  (unit, unstable_matching) Result.t
+
+module Gale_Shapley: sig
+
+  val matches:
+    compatible:(left_index -> right_index -> bool)
+    -> preferences:(right_index -> (left_index * rank) array)
+    -> size: (int * int)
+    -> (int, int) matches
+
+  val fuzzy_match_names:
+    compatibility:('k -> 'k -> bool)
+    -> max_right_items:int
+    -> cutoff:(string -> int)
+    -> ('v,'k) Item.t list -> ('v,'k) Item.t list
+    -> ('v,'k) item_matches
+end
+
+val matches:
+    compatible:(left_index -> right_index -> bool)
+    -> preferences:(right_index -> (left_index * rank) array)
+    -> size: (int * int)
+    -> (int, int) matches
 
 val fuzzy_match_names:
   compatibility:('k -> 'k -> bool)
