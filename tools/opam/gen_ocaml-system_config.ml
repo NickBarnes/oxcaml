@@ -47,9 +47,9 @@ let ocamlc =
 let () =
   if Sys.ocaml_version <> expected_ocaml_version then begin
     Printf.eprintf
-      "ERROR: The compiler found at %%s has version %%s,\n\
-       and this package requires %%s.\n\
-       You should use e.g. 'opam switch create %%s.%%s' instead.\n"
+      "ERROR: The compiler found at %s has version %s,\n\
+       and this package requires %s.\n\
+       You should use e.g. 'opam switch create %s.%s' instead.\n"
        ocamlc Sys.ocaml_version expected_ocaml_version package_name
        Sys.ocaml_version;
     exit 1
@@ -66,7 +66,7 @@ let () =
       let r = input_line ic in
       close_in ic; Sys.remove "where"; r
     else begin
-      Printf.eprintf "Unexpected exit code %%d from `ocamlc -where'\n" exit_code;
+      Printf.eprintf "Unexpected exit code %d from `ocamlc -where'\n" exit_code;
       exit 1
     end
   in
@@ -79,7 +79,7 @@ let () =
   in
   let oc = open_out package_config_file in
   Printf.fprintf oc "opam-version: \"2.0\"\n\
-                     file-depends: [ [ %%S %%S ] [ %%S %%S ] ]\n\
-                     variables { path: %%S }\n"
+                     file-depends: [ [ %S %S ] [ %S %S ] ]\n\
+                     variables { path: %S }\n"
     ocamlc ocamlc_digest graphics graphics_digest (Filename.dirname ocamlc);
   close_out oc

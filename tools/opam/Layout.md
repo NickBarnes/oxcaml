@@ -46,15 +46,15 @@ There are various additional packages which assist in the process:
   installed).
 - `ocaml-beta` is a single package used to prevent accidental installation of
   pre-release compilers when using opam 2.0.
-- `ocaml-config` packaged the tools/opam/gen\_ocaml\_config.ml.in script, but is
-  no longer required.
+- `ocaml-config` packaged the tools/opam/gen\_ocaml\_config.ml script, but is no
+  longer required.
 - `flexdll` and `winpthreads` are source-installing packages which provide the
   source code, when required, for the flexdll and winpthreads submodules when
   compiling OCaml on Windows.
 
 ## Scripts
 
-### `gen_ocaml_config.ml.in`
+### `gen_ocaml_config.ml`
 
 Packages in opam are able to set variables as part of their build process; the
 `ocaml` package defines six:
@@ -72,22 +72,20 @@ Packages in opam are able to set variables as part of their build process; the
   compiler) or the compiler version (e.g. "5.4.0"), otherwise.
 
 This script is used by the `ocaml` package to generate the file `ocaml.config`
-when the `ocaml` package is installed. It's written using opam's `substs`
-format where opam will replace everything in `%{...}%` with the correct value.
-This means `%` symbols should be doubled.
+when the `ocaml` package is installed.
 
 Historically, this file lived in opam-repository itself, and was installed as a
 script by the `ocaml-config` package and then used by each of the `ocaml`
 packages. opam-repository no longer stores files directly in its repo, but the
 script is still downloaded from this repository by the `ocaml` package.
 
-### `gen_ocaml-system_config.ml.in`
+### `gen_ocaml-system_config.ml`
 
 This script is used by the `ocaml-system` package to generate the file
 `ocaml-system.config` when using a compiler which has been installed outside of
-opam. It works in a similar way to `gen_ocaml_config.ml.in`. `ocaml-system`
-defines one variable `path` which contains the directory where the compiler's
-binaries are located. The script also sets up another mechanism in opam to
+opam. It works in a similar way to `gen_ocaml_config.ml`. `ocaml-system` defines
+one variable `path` which contains the directory where the compiler's binaries
+are located. The script also sets up another mechanism in opam to
 ensure that the package is recompiled by opam if the compiler is altered (for
 example, by upgrading the compiler through the OS's package manager via
 `apt upgrade` or `brew upgrade`). This is done by recording the digest of
