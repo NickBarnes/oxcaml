@@ -128,30 +128,49 @@ let init (sgs:Includemod.Error.signature_symptom) =
 
 module C = Includemod.Check
 
+type 'a items =
+  ( (Types.signature_item, 'a) Stable_matching.Item.t,
+    Types.signature_item)
+  Stable_matching.matches
+
+type fold = {
+  f: 'a. 'a C.compatibility_test -> subst:Subst.t ->
+    'a items -> bool * Subst.t * 'a items
+}
+
+type map = { m: 'a. 'a C.compatibility_test -> 'a items -> 'a items }
+
+
+let fold_static {f} subst map =
+  let pmty, subst, module_types = f C.module_types ~subst map.module_types in
+  let pm, subst, modules = f C.modules ~subst map.modules in
+  let pty, subst, types = f C.types ~subst map.types in
+  pmty || pm || pty, subst, { map with module_types; modules; types }
+
+let map_dynamic {m} map = {
+  module_types = map.module_types;
+  modules = map.modules;
+  types = map.types; (* to check that all fields are handled *)
+  values = m C.values map.values;
+  classes = m C.classes map.classes;
+  class_types = m C.class_types map.class_types;
+  extensions = m C.extensions map.extensions;
+}
+
 let rec iterate env subst lim map =
   let fuzzy_match c ~subst items = fuzzy_match_suggestions env c ~subst items in
-  let pmty, subst, module_types =
-    fuzzy_match C.module_types ~subst map.module_types in
-  let pm, subst, modules = fuzzy_match C.modules ~subst map.modules in
-  let pty, subst, types = fuzzy_match C.types ~subst map.types in
-  let progress = pmty || pm || pty in
+  let progress, subst, map = fold_static {f=fuzzy_match} subst map in
   if progress && lim > 0 then
-    iterate env subst (lim-1)
-      { map with module_types; modules; types }
+    iterate env subst (lim-1) map
   else subst, map
 
 let value_suggestions env subst map =
   let fuzzy_match compat current =
-    let open Stable_matching in
     let compatibility x y = compat env subst x y in
-    fuzzy_match_names ~max_right_items ~cutoff ~compatibility
-      current.left current.right
+    Stable_matching.fuzzy_match_names ~max_right_items ~cutoff ~compatibility
+      current.Stable_matching.left current.Stable_matching.right
   in
-  let values = fuzzy_match C.values map.values in
-  let classes = fuzzy_match C.classes map.classes in
-  let class_types = fuzzy_match C.class_types map.class_types in
-  let extensions = fuzzy_match C.extensions map.extensions in
-  { map with values; classes; class_types; extensions }
+  map_dynamic {m=fuzzy_match} map
 
 let suggest
     (sgs : Includemod.Error.signature_symptom)
