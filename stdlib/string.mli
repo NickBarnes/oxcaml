@@ -465,7 +465,8 @@ val find_first :
     [""] and [start] is [length s].
 
     If you need to search for [sub] multiple times in [s] it is more
-    efficient to use {!find_all}.
+    efficient to use {!find_all} or to partially apply [~sub] and
+    use the resulting function multiple times.
 
     @raise Invalid_argument if [start] is not a valid position of [s].
 
@@ -483,7 +484,8 @@ val find_last :
     [""] and [start] is [length s].
 
     If you need to search for [sub] multiple times in [s] it is more
-    efficient to use {!rfind_all}.
+    efficient to use {!rfind_all} or to partially apply [~sub] and
+    use the resulting function multiple times.
 
     @raise Invalid_argument if [start] is not a valid position of [s].
 

@@ -263,6 +263,7 @@ let () =
   (* Test String.is_empty *)
   assert (String.is_empty "life" = false);
   assert (String.is_empty "" = true);
+  ()
 
 let () =
   (* Test String.find_{first,last}_index *)

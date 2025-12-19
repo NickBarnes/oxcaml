@@ -372,14 +372,20 @@ module Search = struct
       slen - 1 - (!j + (sublen - 1))
 end
 
-let find_first ~sub ?(start = 0) s =
+let find_first ~sub =
+  let search ~sub_lp ~sub ?(start = 0) s =
+    match Search.find ~start ~sub_lp ~sub s with -1 -> None | i -> Some i
+  in
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
-  match Search.find ~start ~sub_lp ~sub s with -1 -> None | i -> Some i
+  search ~sub_lp ~sub
 
-let find_last ~sub ?start s =
-  let start = match start with None -> length s | Some s -> s in
+let find_last ~sub =
+  let search ~rsub_lp ~sub ?start s =
+    let start = match start with None -> length s | Some s -> s in
+    match Search.rfind ~start ~rsub_lp ~sub s with -1 -> None | i -> Some i
+  in
   let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
-  match Search.rfind ~start ~rsub_lp ~sub s with -1 -> None | i -> Some i
+  search ~rsub_lp ~sub
 
 let find_all f ~sub ?(start = 0) s acc =
   let rec loop f acc sub sub_lp s ~start ~slen =
