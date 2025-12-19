@@ -393,10 +393,8 @@ let find_all f ~sub ?(start = 0) s acc =
     match Search.find ~start ~sub ~sub_lp s with
     | -1 -> acc
     | i ->
-        let acc = f i acc in
-        let start = i + length sub in
-        let start = if start = i then start + 1 else start in
-        loop f acc sub sub_lp s ~start ~slen
+        let start = i + Int.max (length sub) 1 in
+        loop f (f i acc) sub sub_lp s ~start ~slen
   in
   let slen = length s in
   if not (0 <= start && start <= slen) then invalid_start ~start slen else
