@@ -493,10 +493,11 @@ val find_all :
   f:(int -> 'acc -> 'acc) ->
   sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
   ?start:int -> string -> 'acc -> 'acc
-(** [find_all f ~sub ~start s acc], starting with [acc], folds [f]
-    over all non-overlapping starting positions of [sub] in [s] at or
-    after the index or position [start] (defaults to [0]). The
-    result is [acc] if [sub] could not be found in [s].
+(** [find_all f ~sub ~start s acc], starting with [acc], folds [f] by
+    increasing index order over all non-overlapping starting positions
+    of [sub] in [s] at or after the index or position [start]
+    (defaults to [0]). The result is [acc] if [sub] could not be found
+    in [s].
 
     If [sub] is [""], [f] gets invoked on all positions of [s] at or after
     [start].
@@ -509,10 +510,11 @@ val rfind_all :
   f:(int -> 'acc -> 'acc) ->
   sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
   ?start:int -> string -> 'acc -> 'acc
-(** [rfind_all f ~sub ~start s acc], starting with [acc], folds [f]
-    over all non-overlapping starting positions of [sub] in [s] at or
-    before the index or position [start] (defaults to [String.length
-    s]). The result is [acc] if [sub] could not be found in [s].
+(** [rfind_all f ~sub ~start s acc], starting with [acc], folds [f] by
+    decreasing index order over all non-overlapping starting
+    positions of [sub] in [s] at or before the index or position
+    [start] (defaults to [String.length s]). The result is [acc] if
+    [sub] could not be found in [s].
 
     If [sub] is [""], [f] gets invoked on on all positions of [s] at
     or before [start].
