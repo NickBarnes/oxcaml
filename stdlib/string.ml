@@ -373,54 +373,52 @@ module Search = struct
 end
 
 let find_first ~sub =
-  let search ~sub ~sub_lp ~sub_periodic ?(start = 0) s =
-    match Search.find ~start ~sub_lp ~sub_periodic ~sub s with
-    | -1 -> None | i -> Some i
-  in
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
   let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
-  search ~sub ~sub_lp ~sub_periodic
+  fun ?(start = 0) s ->
+    match Search.find ~start ~sub_lp ~sub_periodic ~sub s with
+    | -1 -> None | i -> Some i
 
 let find_last ~sub =
-  let search ~sub ~rsub_lp ~rsub_periodic ?start s =
+  let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
+  let rsub_periodic = Search.ris_sub_periodic ~sub ~rsub_lp in
+  fun ?start s ->
     let start = match start with None -> length s | Some s -> s in
     match Search.rfind ~start ~sub ~rsub_lp ~rsub_periodic s with
     | -1 -> None | i -> Some i
-  in
-  let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
-  let rsub_periodic = Search.ris_sub_periodic ~sub ~rsub_lp in
-  search ~sub ~rsub_lp ~rsub_periodic
 
-let find_all f ~sub ?(start = 0) s acc =
-  let rec loop f acc sub sub_lp sub_periodic s ~start ~slen =
-    if start > slen then acc else
-    match Search.find ~start ~sub ~sub_lp ~sub_periodic s with
-    | -1 -> acc
-    | i ->
-        let start = i + Int.max (length sub) 1 in
-        loop f (f i acc) sub sub_lp sub_periodic s ~start ~slen
-  in
-  let slen = length s in
-  if not (0 <= start && start <= slen) then invalid_start ~start slen else
+let find_all ~sub =
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
   let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
-  loop f acc sub sub_lp sub_periodic s ~start ~slen
+  fun f ?(start = 0) s acc ->
+    let rec loop f acc sub sub_lp sub_periodic s ~start ~slen =
+      if start > slen then acc else
+      match Search.find ~start ~sub ~sub_lp ~sub_periodic s with
+      | -1 -> acc
+      | i ->
+          let start = i + Int.max (length sub) 1 in
+          loop f (f i acc) sub sub_lp sub_periodic s ~start ~slen
+    in
+    let slen = length s in
+    if not (0 <= start && start <= slen) then invalid_start ~start slen else
+    loop f acc sub sub_lp sub_periodic s ~start ~slen
 
-let rfind_all f ~sub ?start s acc =
-  let rec loop f acc sub rsub_lp rsub_periodic s ~start ~slen =
-    if start < 0 then acc else
-    match Search.rfind ~start ~sub ~rsub_lp ~rsub_periodic s with
-    | -1 -> acc
-    | i ->
-        let start = i - Int.max (length sub) 1 in
-        loop f (f i acc) sub rsub_lp rsub_periodic s ~start ~slen
-  in
-  let slen = length s in
-  let start = match start with None -> length s | Some s -> s in
-  if not (0 <= start && start <= slen) then invalid_start ~start slen else
+let rfind_all ~sub =
   let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
   let rsub_periodic = Search.ris_sub_periodic ~sub ~rsub_lp in
-  loop f acc sub rsub_lp rsub_periodic s ~start ~slen
+  fun f ?start s acc ->
+    let rec loop f acc sub rsub_lp rsub_periodic s ~start ~slen =
+      if start < 0 then acc else
+      match Search.rfind ~start ~sub ~rsub_lp ~rsub_periodic s with
+      | -1 -> acc
+      | i ->
+          let start = i - Int.max (length sub) 1 in
+          loop f (f i acc) sub rsub_lp rsub_periodic s ~start ~slen
+    in
+    let slen = length s in
+    let start = match start with None -> length s | Some s -> s in
+    if not (0 <= start && start <= slen) then invalid_start ~start slen else
+    loop f acc sub rsub_lp rsub_periodic s ~start ~slen
 
 (* ASCII transforms *)
 

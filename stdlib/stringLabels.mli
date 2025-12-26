@@ -451,7 +451,11 @@ val rindex_opt : string -> char -> int option
 
     @since 4.05 *)
 
-(** {1:find_subs Finding substrings} *)
+(** {1:find_subs Finding substrings}
+
+    {b Note.} To find the same [sub] string multiple times, partially
+    applying the [~sub] argument of these functions and using the
+    resulting function repeatedly is more efficient *)
 
 val find_first :
   sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
@@ -463,10 +467,6 @@ val find_first :
     If [sub] is [""] the result is [Some start]. The result of the
     function is always a valid index of [s] except when [sub] is
     [""] and [start] is [length s].
-
-    If you need to search for [sub] multiple times in [s] it is more
-    efficient to use {!find_all} or to partially apply [~sub] and
-    use the resulting function multiple times.
 
     @raise Invalid_argument if [start] is not a valid position of [s].
 
@@ -483,19 +483,15 @@ val find_last :
     function is always a valid index of [s] except when [sub] is
     [""] and [start] is [length s].
 
-    If you need to search for [sub] multiple times in [s] it is more
-    efficient to use {!rfind_all} or to partially apply [~sub] and
-    use the resulting function multiple times.
-
     @raise Invalid_argument if [start] is not a valid position of [s].
 
     @since 5.5 *)
 
 val find_all :
-  f:(int -> 'acc -> 'acc) ->
   sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  f:(int -> 'acc -> 'acc) ->
   ?start:int -> string -> 'acc -> 'acc
-(** [find_all f ~sub ~start s acc], starting with [acc], folds [f] by
+(** [find_all ~sub f ~start s acc], starting with [acc], folds [f] by
     increasing index order over all non-overlapping starting positions
     of [sub] in [s] at or after the index or position [start]
     (defaults to [0]). The result is [acc] if [sub] could not be found
@@ -509,10 +505,10 @@ val find_all :
     @since 5.5 *)
 
 val rfind_all :
-  f:(int -> 'acc -> 'acc) ->
   sub (* comment thwarts tools/sync_stdlib_docs *) :string ->
+  f:(int -> 'acc -> 'acc) ->
   ?start:int -> string -> 'acc -> 'acc
-(** [rfind_all f ~sub ~start s acc], starting with [acc], folds [f] by
+(** [rfind_all ~sub f ~start s acc], starting with [acc], folds [f] by
     decreasing index order over all non-overlapping starting
     positions of [sub] in [s] at or before the index or position
     [start] (defaults to [String.length s]). The result is [acc] if
