@@ -241,19 +241,19 @@ module Search = struct
     let l1 = !i and p1 = !p in
     if l0 > l1 then (l0, p0) else (l1, p1)
 
-  let find ~start ~sub ~sub_lp:(l, p as sub_lp) s = (* -1 on not found *)
-    let is_sub_periodic ~sub ~sub_lp:(l, p) =
-      let i = ref 0 in
-      while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
-      do incr i done;
-      !i > l
-    in
+  let is_sub_periodic ~sub ~sub_lp:(l, p) =
+    let i = ref 0 in
+    while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
+    do incr i done;
+    !i > l
+
+  let find ~start ~sub ~sub_lp:(l, p) ~sub_periodic s = (* -1 on not found *)
     let slen = length s and sublen = length sub in
     if not (0 <= start && start <= slen) then invalid_start ~start slen else
     let smax = slen - sublen in
     let j = ref start in
     try
-      if is_sub_periodic ~sub ~sub_lp then begin
+      if sub_periodic then begin
         let memory = ref (-1) in
         while (!j <= smax) do
           let i = ref (1 + Int.max l !memory) in
@@ -314,13 +314,13 @@ module Search = struct
     let l1 = !i and p1 = !p in
     if l0 > l1 then (l0, p0) else (l1, p1)
 
-  let rfind ~start ~sub ~rsub_lp:(l, p as sub_lp) s = (* -1 on not found *)
-    let is_sub_periodic ~sub ~sub_lp:(l, p) =
-      let i = ref 0 in
-      while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
-      do incr i done;
-      !i > l
-    in
+  let ris_sub_periodic ~sub ~rsub_lp:(l, p) =
+    let i = ref 0 in
+    while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
+    do incr i done;
+    !i > l
+
+  let rfind ~start ~sub ~rsub_lp:(l, p) ~rsub_periodic s = (* -1 on not found *)
     let slen = length s and sublen = length sub in
     if not (0 <= start && start <= slen) then invalid_start ~start slen else
     let start =
@@ -334,7 +334,7 @@ module Search = struct
     let smax = slen - sublen in
     let j = ref start in
     try
-      if is_sub_periodic ~sub ~sub_lp then begin
+      if rsub_periodic then begin
         let memory = ref (-1) in
         while (!j <= smax) do
           let i = ref (1 + Int.max l !memory) in
@@ -367,54 +367,60 @@ module Search = struct
         -1
       end
     with Exit ->
-      (* This transforms back from the inverse space and compensates
+      (* This transforms back from the reverse space and compensates
          for the fact that we found the index of the end of [sub]. *)
       slen - 1 - (!j + (sublen - 1))
 end
 
 let find_first ~sub =
-  let search ~sub_lp ~sub ?(start = 0) s =
-    match Search.find ~start ~sub_lp ~sub s with -1 -> None | i -> Some i
+  let search ~sub ~sub_lp ~sub_periodic ?(start = 0) s =
+    match Search.find ~start ~sub_lp ~sub_periodic ~sub s with
+    | -1 -> None | i -> Some i
   in
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
-  search ~sub_lp ~sub
+  let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
+  search ~sub ~sub_lp ~sub_periodic
 
 let find_last ~sub =
-  let search ~rsub_lp ~sub ?start s =
+  let search ~sub ~rsub_lp ~rsub_periodic ?start s =
     let start = match start with None -> length s | Some s -> s in
-    match Search.rfind ~start ~rsub_lp ~sub s with -1 -> None | i -> Some i
+    match Search.rfind ~start ~sub ~rsub_lp ~rsub_periodic s with
+    | -1 -> None | i -> Some i
   in
   let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
-  search ~rsub_lp ~sub
+  let rsub_periodic = Search.ris_sub_periodic ~sub ~rsub_lp in
+  search ~sub ~rsub_lp ~rsub_periodic
 
 let find_all f ~sub ?(start = 0) s acc =
-  let rec loop f acc sub sub_lp s ~start ~slen =
+  let rec loop f acc sub sub_lp sub_periodic s ~start ~slen =
     if start > slen then acc else
-    match Search.find ~start ~sub ~sub_lp s with
+    match Search.find ~start ~sub ~sub_lp ~sub_periodic s with
     | -1 -> acc
     | i ->
         let start = i + Int.max (length sub) 1 in
-        loop f (f i acc) sub sub_lp s ~start ~slen
+        loop f (f i acc) sub sub_lp sub_periodic s ~start ~slen
   in
   let slen = length s in
   if not (0 <= start && start <= slen) then invalid_start ~start slen else
   let sub_lp = Search.find_maximal_suffix_and_period ~sub in
-  loop f acc sub sub_lp s ~start ~slen
+  let sub_periodic = Search.is_sub_periodic ~sub ~sub_lp in
+  loop f acc sub sub_lp sub_periodic s ~start ~slen
 
 let rfind_all f ~sub ?start s acc =
-  let rec loop f acc sub rsub_lp s ~start ~slen =
+  let rec loop f acc sub rsub_lp rsub_periodic s ~start ~slen =
     if start < 0 then acc else
-    match Search.rfind ~start ~sub ~rsub_lp s with
+    match Search.rfind ~start ~sub ~rsub_lp ~rsub_periodic s with
     | -1 -> acc
     | i ->
         let start = i - Int.max (length sub) 1 in
-        loop f (f i acc) sub rsub_lp s ~start ~slen
+        loop f (f i acc) sub rsub_lp rsub_periodic s ~start ~slen
   in
   let slen = length s in
   let start = match start with None -> length s | Some s -> s in
   if not (0 <= start && start <= slen) then invalid_start ~start slen else
   let rsub_lp = Search.rfind_maximal_suffix_and_period ~sub in
-  loop f acc sub rsub_lp s ~start ~slen
+  let rsub_periodic = Search.ris_sub_periodic ~sub ~rsub_lp in
+  loop f acc sub rsub_lp rsub_periodic s ~start ~slen
 
 (* ASCII transforms *)
 
