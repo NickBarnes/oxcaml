@@ -870,6 +870,7 @@ cc_has_debug_prefix_map
 unix_directory
 unix_library
 ocamltest_libunix
+ocamltest_CXX
 ocamltest_CPP
 optional_native_tools
 optional_bytecode_tools
@@ -3487,6 +3488,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L037
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -23881,7 +23883,54 @@ else $as_nop
 testsuite/tools/test_in_prefix"
 fi
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
-    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools" ;; #(
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a C++11 compiler" >&5
+printf %s "checking for a C++11 compiler... " >&6; }
+if test ${ocaml_cv_prog_cxx+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+    case "$ccomp_type" in #(
+  cc) :
+
+        saved_CC="$CC"
+        CC="$CC -xc++"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#error "No C++11 support"
+#endif
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ocaml_cv_prog_cxx="$CC"
+else $as_nop
+  ocaml_cv_prog_cxx=""
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+        CC="$saved_CC" ;; #(
+  msvc) :
+
+        # cl.exe selects between C and C++ based on the file extension
+        ocaml_cv_prog_cxx="$CC" ;; #(
+  *) :
+    ocaml_cv_prog_cxx="" ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_prog_cxx" >&5
+printf "%s\n" "$ocaml_cv_prog_cxx" >&6; }
+  ocamltest_CXX="$ocaml_cv_prog_cxx" ;; #(
   *) :
     build_ocamltest=false
   ocamltest='' ;;
