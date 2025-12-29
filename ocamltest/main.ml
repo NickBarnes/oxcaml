@@ -224,6 +224,7 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
+  Filename.set_temp_dir_name test_build_directory_prefix;
   let clean_test_build_directory () =
     try
       Sys.rm_rf test_build_directory_prefix
