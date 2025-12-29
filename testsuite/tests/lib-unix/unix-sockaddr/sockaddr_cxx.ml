@@ -1,11 +1,12 @@
 (* TEST
  not msvc;
+ has-cxx;
  readonly_files = "sockaddr_cxx_aux.cpp";
  hasunix;
  include unix;
  {
    setup-ocamlopt.byte-build-env;
-   script = "${cc} -xc++ -std=c++11 ${cppflags} ${cflags} \
+   script = "${cxx} ${cppflags} ${cflags} \
      -I ${ocamlsrcdir}/runtime \
      -I ${ocamlsrcdir}/otherlibs/unix \
      -o ${test_build_directory}/sockaddr_cxx_aux.o \
@@ -20,7 +21,7 @@
  }
  {
    setup-ocamlc.byte-build-env;
-   script = "${cc} -xc++ -std=c++11 ${cppflags} ${cflags} \
+   script = "${cxx} ${cppflags} ${cflags} \
      -I ${ocamlsrcdir}/runtime \
      -I ${ocamlsrcdir}/otherlibs/unix \
      -o ${test_build_directory}/sockaddr_cxx_aux.o \
