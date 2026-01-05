@@ -412,6 +412,12 @@ Working version
    always strip typing environment in cmt files
    (Florian Angeletti, review by David Allsopp)
 
+- #14330: add suggestions when a signature mismatch is likely to be be caused by
+  spellchecking mistakes, for instance
+  ```
+      module M: sig type albatross end = struct type albatros end
+  ```
+  (Malo Monin, Florian Angeletti, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
