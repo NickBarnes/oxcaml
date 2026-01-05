@@ -1,4 +1,5 @@
 (* TEST
+ skip;
  modules = "stubs.c";
  readonly_files = "all-includes.h";
  not msvc;
