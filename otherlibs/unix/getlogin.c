@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+/* Arbitrary limit to prevent allocating too much memory */
 #define CAML_LOGIN_NAME_MAX (256 * 4)
 
 CAMLprim value caml_unix_getlogin(value unit)

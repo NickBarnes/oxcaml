@@ -88,7 +88,7 @@ CAMLprim value caml_unix_getpwnam(value name)
     caml_raise_not_found();
   }
   res = alloc_passwd_entry(entry);
-#if HAVE_GETPWNAM_R
+#ifdef HAVE_GETPWNAM_R
   caml_stat_free(buffer);
 #endif
   return res;
@@ -131,7 +131,7 @@ CAMLprim value caml_unix_getpwuid(value uid)
     caml_raise_not_found();
   }
   res = alloc_passwd_entry(entry);
-#if HAVE_GETPWUID_R
+#ifdef HAVE_GETPWUID_R
   caml_stat_free(buffer);
 #endif
   return res;
