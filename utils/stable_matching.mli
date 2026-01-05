@@ -48,15 +48,23 @@ val strong_stable_matches:
   distance:(int -> int -> int) -> (_,int) matches ->
   (unit, unstable_matching) Result.t
 
+(** [matches ~compatible ~preferences ~size:(ls,rs)] computes a matching between
+    a set of [ls] left items and [rs] right items favoring the right side. The
+    matches are compatible and weakly stable according to the [preferences]
+    matrix. The size of the matching is at least 2/3 of the optimal matching
+    size (computing optimal matching with partial preferences and ties is in
+    NP).
+*)
 val matches:
     compatible:(left_index -> right_index -> bool)
     -> preferences:(right_index -> (left_index * rank) array)
     -> size: (int * int)
     -> (int, int) matches
 
-val fuzzy_match_names:
-  compatibility:('k -> 'k -> bool)
-  -> max_right_items:int
-  -> cutoff:(string -> int)
-  -> ('v,'k) Item.t list -> ('v,'k) Item.t list
-  -> ('v,'k) item_matches
+(** [fuzzy_match_names ~compatibility ~max_right_item ~cutoff left right] calls
+    the {!matches} function using the OSA edit distance to compute preferences
+    with a cutoff function. To avoid quadratic complexity on large module size
+    we limit the right side to the first [max_right_item] items *)
+val fuzzy_match_names: compatibility:('k -> 'k -> bool) ->
+  max_right_items:int -> cutoff:(string -> int) -> ('v,'k) Item.t list ->
+  ('v,'k) Item.t list -> ('v,'k) item_matches
