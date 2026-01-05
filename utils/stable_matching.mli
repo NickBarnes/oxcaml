@@ -48,22 +48,6 @@ val strong_stable_matches:
   distance:(int -> int -> int) -> (_,int) matches ->
   (unit, unstable_matching) Result.t
 
-module Gale_Shapley: sig
-
-  val matches:
-    compatible:(left_index -> right_index -> bool)
-    -> preferences:(right_index -> (left_index * rank) array)
-    -> size: (int * int)
-    -> (int, int) matches
-
-  val fuzzy_match_names:
-    compatibility:('k -> 'k -> bool)
-    -> max_right_items:int
-    -> cutoff:(string -> int)
-    -> ('v,'k) Item.t list -> ('v,'k) Item.t list
-    -> ('v,'k) item_matches
-end
-
 val matches:
     compatible:(left_index -> right_index -> bool)
     -> preferences:(right_index -> (left_index * rank) array)

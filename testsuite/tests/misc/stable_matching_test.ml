@@ -8,6 +8,70 @@ let default_size = (10, 11)
 let trace ~on =
   if on then Format.printf else Format.ifprintf Format.std_formatter
 
+(** Implementation of Gale-Shapley algorithm to use as a reference implementation *)
+
+module Gale_Shapley = struct
+  open Stable_matching
+  type right = {
+    index:right_index;
+    candidate: int;
+    preferences:(left_index * rank) array;
+  }
+
+  let next_candidate r = { r with candidate = r.candidate + 1 }
+
+  type matched_left = { matched_to:right; rank:rank }
+
+  type state = {
+    active: right list;
+    inactive: right_index list;
+    left: matched_left option array;
+  }
+
+  let try_match ~compatible state (r:right) =
+    if r.candidate >= Array.length r.preferences then
+      { state with inactive = r.index :: state.inactive }
+    else
+      let candidate, rank = r.preferences.(r.candidate) in
+      if not (compatible candidate r.index) then
+        { state with active = next_candidate r :: state.active }
+      else match state.left.(candidate) with
+      | None ->
+          state.left.(candidate) <- Some { matched_to=r; rank };
+          state
+      | Some r' ->
+          if r'.rank > rank then
+            let () = state.left.(candidate) <- Some { matched_to=r; rank } in
+            { state with active = next_candidate r'.matched_to :: state.active }
+          else
+            { state with active = next_candidate r :: state.active }
+
+  let rec fix ~compatible state =
+    let state =
+      List.fold_left (try_match ~compatible) { state with active = [] }
+        state.active
+    in
+    match state.active with
+    | [] -> state
+    | _ ->  fix ~compatible state
+
+  let matches ~compatible ~preferences ~size:(n_left, n_right) =
+    let init i = { index=i; candidate = 0; preferences = preferences i } in
+    let active = Array.to_list @@ Array.init n_right init in
+    let left = Array.make n_left None in
+    let state = fix ~compatible { active; inactive = []; left } in
+    let left_and_pairs = state.left |> Array.to_seqi |>
+      Seq.partition_map (function
+          | i,None -> Left i
+          | i, Some m -> Right (i, m.matched_to.index)
+        )
+    in
+    let left, pairs = Pair.map List.of_seq List.of_seq left_and_pairs in
+    { left; pairs; right = state.inactive }
+
+end
+
+
 module Full = struct
   let random ~size:(left_size, right_size) ~debug hdist r =
     let trace x = trace ~on:debug x in
@@ -121,7 +185,7 @@ let test ~debug ~size line =
     | exception Not_found -> Int.max_int
     | x -> x
   in
-  let gs_matches = Stable_matching.Gale_Shapley.matches ~compatible ~preferences ~size in
+  let gs_matches = Gale_Shapley.matches ~compatible ~preferences ~size in
   let opt_matches = Stable_matching.matches ~compatible ~preferences ~size in
   let eq x y =
     let sort x =  List.sort Stdlib.compare x in
