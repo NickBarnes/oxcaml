@@ -82,7 +82,7 @@ CAMLprim value caml_unix_getgrnam(value name)
     caml_raise_not_found();
   }
   res = alloc_group_entry(entry);
-#if HAVE_GETGRNAM_R
+#ifdef HAVE_GETGRNAM_R
   caml_stat_free(buffer);
 #endif
   return res;
@@ -125,7 +125,7 @@ CAMLprim value caml_unix_getgrgid(value gid)
     caml_raise_not_found();
   }
   res = alloc_group_entry(entry);
-#if HAVE_GETGRGID_R
+#ifdef HAVE_GETGRGID_R
   caml_stat_free(buffer);
 #endif
   return res;
