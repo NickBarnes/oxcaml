@@ -47,6 +47,9 @@ let cppflags = make ("cppflags",
 let cc = make ("cc",
   "Command to use to invoke the C compiler")
 
+let outputobj = make ("outputobj",
+  "Exact string to prefix a call to cc -c to name the object")
+
 let cflags = make ("cflags",
   "Flags passed to the C compiler")
 
@@ -259,6 +262,7 @@ let _ = List.iter register_variable
     cppflags;
     cc;
     cflags;
+    outputobj;
     cxx;
     caml_ld_library_path;
     codegen_exit_status;

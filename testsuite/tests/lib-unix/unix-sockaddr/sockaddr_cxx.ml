@@ -9,10 +9,10 @@
    script = "${cxx} ${cppflags} ${cflags} \
      -I ${ocamlsrcdir}/runtime \
      -I ${ocamlsrcdir}/otherlibs/unix \
-     -o ${test_build_directory}/sockaddr_cxx_aux.o \
+     ${outputobj}${test_build_directory}/sockaddr_cxx_aux.${objext} \
      -c ${test_source_directory}/sockaddr_cxx_aux.cpp";
    script;
-   all_modules = "sockaddr_cxx_aux.o sockaddr_cxx.ml";
+   all_modules = "sockaddr_cxx_aux.${objext} sockaddr_cxx.ml";
    ocamlopt.byte;
    output = "${test_build_directory}/program-output";
    stdout = "${output}";
@@ -24,10 +24,10 @@
    script = "${cxx} ${cppflags} ${cflags} \
      -I ${ocamlsrcdir}/runtime \
      -I ${ocamlsrcdir}/otherlibs/unix \
-     -o ${test_build_directory}/sockaddr_cxx_aux.o \
+     ${outputobj}${test_build_directory}/sockaddr_cxx_aux.${objext} \
      -c ${test_source_directory}/sockaddr_cxx_aux.cpp";
    script;
-   all_modules = "sockaddr_cxx_aux.o sockaddr_cxx.ml";
+   all_modules = "sockaddr_cxx_aux.${objext} sockaddr_cxx.ml";
    flags = "-output-complete-exe -cclib -lunixbyt";
    ocamlc.byte;
    output = "${test_build_directory}/program-output";

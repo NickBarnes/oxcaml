@@ -1129,6 +1129,7 @@ let config_variables _log env =
     Ocaml_variables.cpp, Ocamltest_config.cpp;
     Ocaml_variables.cppflags, Ocamltest_config.cppflags;
     Ocaml_variables.cc, Ocamltest_config.cc;
+    Ocaml_variables.outputobj, Ocamltest_config.outputobj;
     Ocaml_variables.cflags, Ocamltest_config.cflags;
     Ocaml_variables.cxx, Ocamltest_config.cxx;
     Ocaml_variables.ccomp_type, Ocamltest_config.ccomp_type;

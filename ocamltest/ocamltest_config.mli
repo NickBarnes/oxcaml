@@ -33,6 +33,9 @@ val cppflags : string
 val cc : string
 (** Command to use to invoke the C compiler *)
 
+val outputobj : string
+(** The exact string to use when running [cc -c] to name the object file *)
+
 val cflags : string
 (** Flags to pass to the C compiler *)
 

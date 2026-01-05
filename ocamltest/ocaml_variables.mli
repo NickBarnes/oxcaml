@@ -32,6 +32,8 @@ val cppflags : Variables.t
 
 val cc : Variables.t
 
+val outputobj : Variables.t
+
 val cflags : Variables.t
 
 val cxx : Variables.t
