@@ -347,6 +347,9 @@ let () =
   assert (String.find_first ~start:4 ~sub:"abab" "ababab" = None);
   assert (String.find_first ~start:5 ~sub:"abab" "ababab" = None);
   assert (String.find_first ~start:6 ~sub:"abab" "ababab" = None);
+  assert (String.find_first ~start:0 ~sub:"aba" "xbabxbaba" = Some 6);
+  assert (String.find_first ~start:0 ~sub:"xxxxaz" "yyyyazxxxxxaz" = Some 7);
+  assert (String.find_first ~start:0 ~sub:"aaa" "abaacaaad" = Some 5);
   ()
 
 let () =
