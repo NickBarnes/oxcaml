@@ -514,7 +514,7 @@ val rfind_all :
     [start] (defaults to [String.length s]). The result is [acc] if
     [sub] could not be found in [s].
 
-    If [sub] is [""], [f] gets invoked on on all positions of [s] at
+    If [sub] is [""], [f] gets invoked on all positions of [s] at
     or before [start].
 
     @raise Invalid_argument if [start] is not a valid position of [s].
