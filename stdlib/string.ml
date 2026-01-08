@@ -242,6 +242,7 @@ module Search = struct
     if l0 > l1 then (l0, p0) else (l1, p1)
 
   let is_sub_periodic ~sub ~sub_lp:(l, p) =
+    l < length sub / 2 &&
     let i = ref 0 in
     while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
     do incr i done;
@@ -270,7 +271,7 @@ module Search = struct
         done;
         -1
       end else begin
-        let p = 1 + Int.max (l + 1) (sublen - l - 1) in
+        let q = 1 + Int.max (l + 1) (sublen - l - 1) in
         while (!j <= smax) do
           let i = ref (l + 1) in
           while (!i < sublen && Char.equal (get sub !i) (get s (!i + !j)))
@@ -280,7 +281,7 @@ module Search = struct
             i := l;
             while (!i >= 0 && Char.equal (get sub !i) (get s (!i + !j)))
             do decr i done;
-            if !i < 0 then raise_notrace Exit else (j := !j + p)
+            if !i < 0 then raise_notrace Exit else (j := !j + q)
           end
         done;
         -1
@@ -315,6 +316,7 @@ module Search = struct
     if l0 > l1 then (l0, p0) else (l1, p1)
 
   let ris_sub_periodic ~sub ~rsub_lp:(l, p) =
+    l < length sub / 2 &&
     let i = ref 0 in
     while !i <= l && Char.equal (get sub !i) (get sub (!i + p))
     do incr i done;
@@ -351,7 +353,7 @@ module Search = struct
         done;
         -1
       end else begin
-        let p = 1 + Int.max (l + 1) (sublen - l - 1) in
+        let q = 1 + Int.max (l + 1) (sublen - l - 1) in
         while (!j <= smax) do
           let i = ref (l + 1) in
           while (!i < sublen && Char.equal (get sub !i) (get s (!i + !j)))
@@ -361,7 +363,7 @@ module Search = struct
             i := l;
             while (!i >= 0 && Char.equal (get sub !i) (get s (!i + !j)))
             do decr i done;
-            if !i < 0 then raise_notrace Exit else (j := !j + p)
+            if !i < 0 then raise_notrace Exit else (j := !j + q)
           end
         done;
         -1
