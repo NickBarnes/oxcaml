@@ -97,6 +97,67 @@ let test_min_max () =
   assert (Int64.max 2L 3L = 3L);
   assert (Int64.min 2L 3L = 2L)
 
+let naive_popcount n =
+  let c = ref 0 in
+  for i = 0 to 63 do
+    if Int64.(logand n (shift_left 1L i)) <> 0L then incr c
+  done;
+  !c
+
+let in_unsigned_range x nbits =
+  if nbits < 0 then false else
+  if nbits >= 64 then true else
+  0L <= x && x <= Int64.(pred (shift_left 1L nbits))
+
+let in_signed_range x nbits =
+  if nbits < 1 then false else
+  if nbits >= 64 then true else
+  let bound = Int64.shift_left 1L (nbits - 1) in
+  Int64.(neg bound <= x && x <= pred bound)
+
+let top_unsigned_bits x nbits =
+  if nbits <= 0 then 0L else Int64.(shift_right_logical x (64 - nbits))
+
+let top_signed_bits x nbits =
+  if nbits <= 0 then 0L else Int64.(shift_right x (64 - nbits))
+
+let test_bitcounts () =
+  let check n =
+    let a = Int64.unsigned_bitsize n
+    and z = Int64.leading_zeros n
+    and b = Int64.signed_bitsize n
+    and s = Int64.leading_sign_bits n in
+    assert (a + z = 64);
+    assert (b + s = 64);
+    (* Check 0 <= n < 2^a (unsigned) *)
+    assert (in_unsigned_range n a);
+    if a > 0 then assert (not (in_unsigned_range n (a - 1)));
+    (* Check -2^{b-1} <= n < 2^{b-1} - 1 (signed) *)
+    assert (in_signed_range n b);
+    if b > 1 then assert (not (in_signed_range n (b - 1)));
+    (* Check top z bits are 0 and the next bit is 1 *)
+    assert (top_unsigned_bits n z = 0L);
+    assert (z = 64 || top_unsigned_bits n (z+1) <> 0L);
+    (* Check top s + 1 bits are sign bits and the next bit is not *)
+    assert (let x = top_signed_bits n (s+1) in x = 0L || x = -1L);
+    assert (s = 63 || let x = top_signed_bits n (s+2) in x <> 0L && x <> -1L);
+    (* Check bottom t bits are 0 and the next bit is 1 *)
+    let t = Int64.trailing_zeros n in
+    if n = 0L then assert (t = 64) else begin
+      let m = Int64.(shift_left (-1L) t) in
+      assert (Int64.(logand n m) = n);
+      assert (Int64.(logand n (shift_left m 1)) <> n)
+    end;
+    (* Check popcount against naive count *)
+    let p = Int64.popcount n in
+    assert (p = naive_popcount n) in
+  List.iter check
+    [0L; 1L; 2L; 3L; -1L; -2L; -3L; Int64.min_int; Int64.max_int];
+  for _i = 1 to 1000 do
+    check (Int64.shift_left (Random.int64 0xFFL) (Random.int 48));
+    check (Random.bits64())
+  done
+
 let tests () =
   test_consts ();
   test_arith ();
@@ -107,6 +168,7 @@ let tests () =
   test_float_conv ();
   test_string_conv ();
   test_min_max ();
+  test_bitcounts ();
   ()
 
 let () =
