@@ -928,13 +928,13 @@ and signature_components ~core ~direction ~loc old_env env subst
                 let elt1, elt2 = paired_uids in
                 match pos with
                 | Negative ->
-                    (Cmt_format.Declaration_to_declaration, elt2, elt1)
+                    (Uid.Deps.Declaration_to_declaration, elt2, elt1)
                 | Positive ->
-                    (Cmt_format.Declaration_to_declaration, elt1, elt2)
+                    (Uid.Deps.Declaration_to_declaration, elt1, elt2)
                 | Strictly_positive ->
-                    (Cmt_format. Definition_to_declaration, elt1, elt2)
+                    (Uid.Deps.Definition_to_declaration, elt1, elt2)
               in
-              Cmt_format.record_declaration_dependency paired_uids
+              Uid.Deps.record_declaration_dependency paired_uids
             end;
             let runtime_coercions =
               if present_at_runtime then [pos,x] else []
@@ -1434,7 +1434,7 @@ module Check = struct
   let modules env subst m1 m2 =
     Result.is_ok @@
     check_only (module_declarations ~core:core_inclusion) env subst m1 m2
-      Shape.leaf_for_unpack
+      Shape.(leaf Uid.internal_not_actually_unique)
 
   let values env subst v1 v2 = check_ok value_descriptions env subst v1 v2
   let types env subst t1 t2 = check_ok type_declarations env subst t1 t2
