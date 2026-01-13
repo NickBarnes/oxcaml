@@ -25,9 +25,7 @@
 #include "cst2constr.h"
 #include "misc_internals.h"
 #include <errno.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 #include <fcntl.h>
 
 #ifndef E2BIG
