@@ -310,7 +310,7 @@ log -u` to make sure the rebase patches make sense), but:
 
 ## Guidelines relevant to AI-assisted contributions
 
-See the dedicated [stdlib/AI.md](stdlib/AI.md).
+See the dedicated [AI.md](AI.md).
 
 ## Contributing to the standard library
 
