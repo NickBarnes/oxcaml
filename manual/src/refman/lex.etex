@@ -40,7 +40,7 @@ let f = function
 ident: (letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
 capitalized-ident: uppercase-letter { letter || "0"\ldots"9" || "_" || "'" } ;
 lowercase-ident:
-   (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+   ("\#")? (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
 letter: uppercase-letter || lowercase-letter ;
 lowercase-letter:
 "a"\ldots"z"  || 'U+00DF' \ldots 'U+00F6' || 'U+00F8' \dots 'U+00FF' || 'U+0153' || 'U+0161' || 'U+017E'  ;
@@ -68,6 +68,10 @@ In many places, OCaml makes a distinction between capitalized
 identifiers and identifiers that begin with a lowercase letter.  The
 underscore character is considered a lowercase letter for this
 purpose.
+
+An identifier starting with "\\#" is called a \emph{raw identifier} and is
+equivalent to the identifier obtained by dropping the "\\#" prefix, except that
+the result is never interpreted as a keyword (see section~\ref{sss:keywords}).
 
 \subsubsection*{sss:integer-literals}{Integer literals}
 
@@ -336,7 +340,8 @@ expressions, but otherwise behave like normal identifiers.
 \subsubsection*{sss:keywords}{Keywords}
 
 The identifiers below are reserved as keywords, and cannot be employed
-otherwise:
+otherwise (except by using raw identifiers, see
+section~\ref{sss:lex:identifiers}):
 \begin{verbatim}
       and         as          assert      asr         begin       class
       constraint  do          done        downto      effect      else
