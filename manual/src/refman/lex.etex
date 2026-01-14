@@ -375,6 +375,9 @@ system and should be avoided for backwards compatibility reasons.
     parser    value    $     $$    $:    <:    <<    >>    ??
 \end{verbatim}
 
+Finally, note that the exact set of keywords can be modified by using the
+"-keywords" command-line compiler flag (see section~\ref{s:comp-options}).
+
 \subsubsection*{sss:lex-ambiguities}{Ambiguities}
 
 Lexical ambiguities are resolved according to the ``longest match''
