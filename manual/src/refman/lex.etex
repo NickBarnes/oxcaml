@@ -356,7 +356,8 @@ The identifiers below are reserved as keywords, and must be prefixed with
 %
 \goodbreak%
 %
-The following character sequences are also keywords:
+The following character sequences are also keywords (and unlike the above
+identifiers, they are always reserved):
 %
 %% FIXME the token >] is not used anywhere in the syntax
 %
