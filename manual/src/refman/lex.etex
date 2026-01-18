@@ -368,15 +368,16 @@ identifiers, they are always reserved):
 "    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
-Note that the following identifiers are keywords of the now unmaintained Camlp4
-system and should be avoided for backwards compatibility reasons.
+Note that the exact set of keywords can be modified by using the
+"-keywords" command-line compiler flag (see section~\ref{s:comp-options}).
+%
+Finally, note that the following identifiers are keywords of the now
+unmaintained Camlp4 system and should be avoided for backwards compatibility
+reasons.
 %
 \begin{verbatim}
     parser    value    $     $$    $:    <:    <<    >>    ??
 \end{verbatim}
-
-Finally, note that the exact set of keywords can be modified by using the
-"-keywords" command-line compiler flag (see section~\ref{s:comp-options}).
 
 \subsubsection*{sss:lex-ambiguities}{Ambiguities}
 
