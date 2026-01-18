@@ -339,9 +339,8 @@ expressions, but otherwise behave like normal identifiers.
 
 \subsubsection*{sss:keywords}{Keywords}
 
-The identifiers below are reserved as keywords, and cannot be employed
-otherwise (except by using raw identifiers, see
-section~\ref{sss:lex:identifiers}):
+The identifiers below are reserved as keywords, and must be prefixed with
+"\\#" to be used otherwise (see section~\ref{sss:lex:identifiers}):
 \begin{verbatim}
       and         as          assert      asr         begin       class
       constraint  do          done        downto      effect      else
