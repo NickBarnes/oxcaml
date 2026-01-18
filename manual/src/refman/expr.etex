@@ -1287,7 +1287,7 @@ cases of this construction.
 
 \subsubsection*{sss:local-opens}{Local opens}
 \ikwd{let\@\texttt{let}}
-\ikwd{module\@\texttt{open}}
+\ikwd{open\@\texttt{open}}
 
 The expressions @"let" "open" module-path "in" expr@ and
 @module-path'.('expr')'@ are strictly equivalent. These
