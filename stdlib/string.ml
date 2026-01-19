@@ -422,6 +422,40 @@ let rfind_all ~sub =
     if not (0 <= start && start <= slen) then invalid_start ~start slen else
     loop f acc sub rsub_lp rsub_periodic s ~start ~slen
 
+let replace_first ~sub:needle =
+  let find_first = find_first ~sub:needle in
+  fun ~by ?start s ->
+    match find_first ?start s with
+    | None -> s
+    | Some i ->
+        let rest_first = i + length needle in
+        let rest_len = length s - i - length needle in
+        concat by [sub s 0 i; sub s rest_first rest_len]
+
+let replace_last ~sub:needle =
+  let find_last = find_last ~sub:needle in
+  fun ~by ?start s ->
+    match find_last ?start s with
+    | None -> s
+    | Some i ->
+        let rest_first = i + length needle in
+        let rest_len = length s - i - length needle in
+        concat by [sub s 0 i; sub s rest_first rest_len]
+
+let replace_all ~sub:needle =
+  let find_all = find_all ~sub:needle in
+  fun ~by ?start s ->
+    let chunk_first = ref 0 in
+    let add_chunk i acc =
+      let acc = sub s !chunk_first (i - !chunk_first) :: acc in
+      chunk_first := i + length needle; acc
+    in
+    match find_all ?start add_chunk s [] with
+    | [] -> s
+    | chunks ->
+        let chunks = sub s !chunk_first (length s - !chunk_first) :: chunks in
+        concat by (List.rev chunks)
+
 (* ASCII transforms *)
 
 let uppercase_ascii s =
