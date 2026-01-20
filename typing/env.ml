@@ -1187,7 +1187,18 @@ and find_cstr path name env =
   | Type_record _ | Type_abstract _ | Type_open | Type_external _ ->
       raise Not_found
 
+let find_label path name env =
+  let tda = find_type_data path env in
+  match tda.tda_descriptions with
+  | Type_record (labels, _) ->
+      List.find (fun l -> l.lbl_name = name) labels
+  | Type_variant _ | Type_abstract _ | Type_open | Type_external _ ->
+      raise Not_found
 
+let find_path_extra path =
+  match path with
+  | Pident _ | Pdot _ | Papply _ | Pextra_ty (_,Pext_ty) -> raise Not_found
+  | Pextra_ty (ty, Pcstr_ty name) -> ty, name
 
 let find_modtype_lazy path env =
   match path with
@@ -1409,31 +1420,43 @@ let find_module path env =
 let find_module_lazy path env =
   find_module_lazy ~alias:false path env
 
-let find_uid namespace path env =
+let find_uid (namespace: Shape.Sig_component_kind.t) path env =
+  let path = match namespace with
+    | Value | Class -> normalize_value_path None env path
+    | Type | Constructor | Label | Extension_constructor | Class_type ->
+       normalize_type_path None env path
+    | Module -> normalize_module_path None env path
+    | Module_type -> normalize_modtype_path env path
+  in
   try
     Option.some @@ match (namespace : Shape.Sig_component_kind.t) with
       | Value ->
-        let path = normalize_value_path None env path in
         let vd = find_value path env in
         vd.val_uid
-      | Type | Extension_constructor | Constructor | Label ->
-        let path = normalize_type_path None env path in
+      | Extension_constructor ->
+         let cda = find_extension_full path env in
+         cda.cda_description.cstr_uid
+      | Constructor ->
+         let ty, cstr = find_path_extra path in
+         let cstr = find_cstr ty cstr env in
+         cstr.cstr_uid
+      | Label ->
+         let ty, f = find_path_extra path in
+         let l = find_label ty f env in
+         l.lbl_uid
+      | Type ->
         let td = find_type path env in
         td.type_uid
       | Module ->
-        let path = normalize_module_path None env path in
         let md = find_module path env in
         md.md_uid
       | Module_type ->
-        let path = normalize_modtype_path env path in
         let mtd = find_modtype path env in
         mtd.mtd_uid
       | Class ->
-        let path = normalize_value_path None env path in
         let cty = find_class path env in
         cty.cty_uid
       | Class_type ->
-        let path = normalize_type_path None env path in
         let clty = find_cltype path env in
         clty.clty_uid
   with Not_found -> None
