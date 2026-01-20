@@ -61,6 +61,9 @@ depends: [
   "flexdll" {>= "0.44" & os = "win32"}
 ]
 conflict-class: "ocaml-core-compiler"
+conflicts: [
+  "ocaml-compiler"
+]
 flags: compiler
 build-env: [
   [MSYS2_ARG_CONV_EXCL = "*"]
