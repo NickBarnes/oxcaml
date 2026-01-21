@@ -1,7 +1,7 @@
 ## Guidelines relevant to AI-assisted contributions
 
 Tools using AI are increasingly used to produce text and code, but verifying the
-quality of such output can be difficult.  We ask you, the contributor, to be
+quality of such output can be difficult.  We ask you, the contributor(s), to be
 willing to adapt your workflow accordingly.  The guidelines also apply, or have
 a direct counterpart, with entirely human-produced content.
 
@@ -10,8 +10,7 @@ a direct counterpart, with entirely human-produced content.
 2. We ask that you have either written, or read and reviewed yourself,
    *every part* of your contribution.  You are responsible for its quality.
    It is strongly recommended that you review a proposed contribution in full
-   even if you wrote all of it.  In some circumstances, for example joint
-   work, it may be appropriate to delegate review: please state that on the PR.
+   even if you wrote all of it.
 
 3. If a significant portion of your code, PR description, review comments or
    messages has been AI-generated, this must be disclosed, stating which tool
