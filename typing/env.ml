@@ -1350,26 +1350,26 @@ let add_required_global id =
   && not (List.exists (Ident.same id) !required_globals)
   then required_globals := id :: !required_globals
 
-let rec normalize_module_path lax env = function
+let rec normalize_module_path ~lax env = function
   | Pident id as path when lax && Ident.persistent id ->
       path (* fast path (avoids lookup) *)
   | Pdot (p, s) as path ->
-      let p' = normalize_module_path lax env p in
-      if p == p' then expand_module_path lax env path
-      else expand_module_path lax env (Pdot(p', s))
+      let p' = normalize_module_path ~lax env p in
+      if p == p' then expand_module_path ~lax env path
+      else expand_module_path ~lax env (Pdot(p', s))
   | Papply (p1, p2) as path ->
-      let p1' = normalize_module_path lax env p1 in
-      let p2' = normalize_module_path true env p2 in
-      if p1 == p1' && p2 == p2' then expand_module_path lax env path
-      else expand_module_path lax env (Papply(p1', p2'))
+      let p1' = normalize_module_path ~lax env p1 in
+      let p2' = normalize_module_path ~lax:true env p2 in
+      if p1 == p1' && p2 == p2' then expand_module_path ~lax env path
+      else expand_module_path ~lax env (Papply(p1', p2'))
   | Pident _ as path ->
-      expand_module_path lax env path
+      expand_module_path ~lax env path
   | Pextra_ty _ -> assert false
 
-and expand_module_path lax env path =
+and expand_module_path ~lax env path =
   try match find_module_lazy ~alias:true path env with
     {mdl_type=MtyL_alias path1} ->
-      let path' = normalize_module_path lax env path1 in
+      let path' = normalize_module_path ~lax env path1 in
       if lax || !Clflags.no_alias_deps then path' else
       let id = Path.head path in
       if Ident.global id && not (Ident.same id (Path.head path'))
@@ -1381,12 +1381,12 @@ and expand_module_path lax env path =
       path
 
 let normalize_module_path oloc env path =
-  try normalize_module_path (oloc = None) env path
+  try normalize_module_path ~lax:(oloc = None) env path
   with Not_found ->
     match oloc with None -> assert false
     | Some loc ->
         error (Missing_module(loc, path,
-                              normalize_module_path true env path))
+                              normalize_module_path ~lax:true env path))
 
 let rec normalize_path_prefix oloc env path =
   match path with
