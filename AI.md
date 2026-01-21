@@ -9,24 +9,22 @@ a direct counterpart, with entirely human-produced content.
 
 2. We ask that you have either written, or read and reviewed yourself,
    *every part* of your contribution.  You are responsible for its quality.
-   (It is strongly recommended that you read a proposed contribution in full
-   even if you wrote all of it.)  In some circumstances, for example joint
+   It is strongly recommended that you review a proposed contribution in full
+   even if you wrote all of it.  In some circumstances, for example joint
    work, it may be appropriate to delegate review: please state that on the PR.
 
-3. Reviewing AI-produced code can require a different approach from
-   human-written code.  If a significant portion of your code, PR description,
-   review comments or messages has been AI-generated, please disclose this,
-   stating which tool was used and for what.  You should have an acknowledgement
+3. If a significant portion of your code, PR description, review comments or
+   messages has been AI-generated, this must be disclosed, stating which tool
+   was used and for what.  Reviewing AI-produced code can require a different
+   approach from human-written code.  You should have an acknowledgement
    anyway even if another *human* contributor did some of the work.
 
 4. Please be mindful that reviewer time is a scarce resource. Contributions
    (whether human- or AI-authored) should strive to conserve it.
 
-5. You should not submit code, however it was written, unless you have absolute
-   confidence in its provenance. (We believe the current position of authors of
-   AI coding agents is that it is the user's responsibility to ensure the output
-   does not infringe copyright or licensing terms.) You will need to sign the
-   OCaml contributor licence agreement (CLA) for any significant contribution.
+5. When you submit code, however it was written, you take responsibility for
+   its provenance.  You will need to sign the OCaml contributor licence
+   agreement (CLA) for any significant contribution.
 
 6. The following are never acceptable as contributions: low-effort productions
    of code that contributors do not understand; plagiarised works; hallucinated
