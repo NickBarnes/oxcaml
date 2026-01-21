@@ -308,6 +308,10 @@ log -u` to make sure the rebase patches make sense), but:
   changes, or an un-testable intermediary state) is a sure way to
   generate ill will.
 
+## Guidelines relevant to AI-assisted contributions
+
+See the dedicated [AI.md](AI.md).
+
 ## Contributing to the standard library
 
 Contributions to the standard library are very welcome.
