@@ -1261,7 +1261,8 @@ let unaligned_load_64 ptr idx dbg =
 
 let unaligned_set_64 ptr idx newval dbg =
   if Arch.allow_unaligned_access
-  then Cop(Cstore (Sixtyfour, Assignment), [offset_addr ptr idx dbg; newval], dbg)
+  then
+    Cop(Cstore (Sixtyfour, Assignment), [offset_addr ptr idx dbg; newval], dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
     let v1 =
