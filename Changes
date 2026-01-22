@@ -556,6 +556,9 @@ OCaml 5.5.0
 * #14388: Remove support for `let rec (module M : S) = e1 in e2`.
   (Alistair O'Brien, review by Vincent Laviron and Gabriel Scherer)
 
+- #14413: Introduce and use the C2y countof operator.
+  (Antonin Décimo, review by David Allsopp)
+
 - #14422: Refactoring an `if match e with p1 -> true | p2 -> false then ...`
   into a match in typetexp.
   (Samuel Vivien, review by Gabriel Scherer)

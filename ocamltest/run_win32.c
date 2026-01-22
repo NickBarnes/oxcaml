@@ -32,6 +32,7 @@
 
 #include "caml/memory.h"
 #include "caml/osdeps.h"
+#include "misc_internals.h"
 
 #include "run.h"
 #include "run_common.h"
@@ -47,7 +48,7 @@ static void report_error(
   if (FormatMessage(
     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
     NULL, error, 0, windows_error_message,
-    sizeof(windows_error_message)/sizeof(WCHAR), NULL) ) {
+    countof(windows_error_message), NULL) ) {
     caml_error_message = caml_stat_strdup_of_utf16(windows_error_message);
   } else {
     caml_error_message = caml_stat_alloc(256);
