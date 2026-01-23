@@ -94,6 +94,8 @@ let _ =
   printf "#define SIZECLASS_MAX %d\n" max_slot;
   printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
   printf {|
+#include <assert.h>
+#include <limits.h>
 typedef unsigned char sizeclass;
 static_assert(NUM_SIZECLASSES < (1 << (CHAR_BIT * sizeof(sizeclass))), "");
 
