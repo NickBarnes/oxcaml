@@ -4,6 +4,8 @@
 #define SIZECLASS_MAX 128
 #define NUM_SIZECLASSES 32
 
+#include <assert.h>
+#include <limits.h>
 typedef unsigned char sizeclass;
 static_assert(NUM_SIZECLASSES < (1 << (CHAR_BIT * sizeof(sizeclass))), "");
 
