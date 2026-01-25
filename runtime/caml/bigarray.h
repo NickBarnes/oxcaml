@@ -83,7 +83,35 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
+
+  /* ISO C++ doesn't permit flexible array members, but GCC, Clang and MSVC all
+     support them as compiler extensions. The pragmas below temporarily disable
+     the warnings which these compilers emit for this, which allows this public
+     header to be used in C++ in pedantic/non-permissive mode. */
+#ifdef __cplusplus
+  #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wc99-extensions"
+  #elif defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+  #elif defined(_MSC_VER)
+    #pragma warning(push)
+    #pragma warning(disable: 4200)
+  #endif
+#endif
+
   intnat dim[/* num_dims */]; /* Size in each dimension */
+
+#ifdef __cplusplus
+  #if defined(__clang__)
+    #pragma clang diagnostic pop
+  #elif defined(__GNUC__)
+    #pragma GCC diagnostic pop
+  #elif defined(_MSC_VER)
+    #pragma warning(pop)
+  #endif
+#endif
 };
 
 /* Size of struct caml_ba_array, in bytes, without [dim] array */
