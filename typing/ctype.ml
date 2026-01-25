@@ -318,6 +318,13 @@ let increase_global_level () =
 let restore_global_level gl =
   global_level := gl
 
+(* Reset all level counters - used between compilation units *)
+let reset () =
+  current_level := 0;
+  nongen_level := 0;
+  global_level := 0;
+  saved_levels := []
+
 (**** Some type creators ****)
 
 (* Re-export generic type creators *)

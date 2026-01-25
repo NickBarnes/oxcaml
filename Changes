@@ -304,6 +304,14 @@ OCaml 5.5.0
   (Jacques Garrigue and Takafumi Saikawa, reported by Olivier Nicole,
    review by Gabriel Scherer)
 
+- #14483: Reset type ID and level counters between compilations to restore
+  reproducibility of debug information between `ocamlc -c foo.mli foo.ml` versus
+  `ocamlc -c foo.mli; ocamlc -c foo.ml`. Also hashcons the identifiers used for
+  persistent structures across resets of the type checker. In particular, that
+  means the initialisation of globals in Matching do not become observable in
+  the marshalled output.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - #13700, #14454: Use POSIX thread-safe getgrnam_r, getgrgid_r, getpwnam_r,
