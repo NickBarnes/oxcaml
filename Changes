@@ -611,6 +611,10 @@ OCaml 5.5.0
   -runtime-search used for bytecode executables produced by the compiler.
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
+- #14484: Set `_WIN32_WINNT` to require Windows 8/Server 2012 Windows header SDK
+  support.
+  (Antonin Décimo, review by David Allsopp)
+
 ### Bug fixes:
 
 - #14036: Fix nontermination of cycle printing in recursive modules with
