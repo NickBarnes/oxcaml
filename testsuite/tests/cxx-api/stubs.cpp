@@ -2,7 +2,9 @@
 #error "A C++ compiler is required!"
 #endif
 
-#include "all-includes.h"
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/threads.h>
 #include <ctime>
 
 extern "C" {
