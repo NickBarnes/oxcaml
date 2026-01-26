@@ -8081,7 +8081,6 @@ tools/lintapidiff.cmx : \
     typing/ident.cmx \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmi :
-tools/make_opcodes.cmi :
 tools/objinfo.cmo : \
     typing/typedtree.cmi \
     bytecomp/symtable.cmi \
