@@ -77,6 +77,7 @@ The current list of maintainers is as follows:
 - @lthls Vincent Laviron
 - @maranget Luc Maranget
 - @mshinwell Mark Shinwell
+- @NickBarnes Nick Barnes
 - @nojb Nicolás Ojeda Bär
 - @Octachron Florian Angeletti
 - @OlivierNicole Olivier Nicole
