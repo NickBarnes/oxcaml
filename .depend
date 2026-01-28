@@ -10121,7 +10121,6 @@ ocamltest/main.cmo : \
     ocamltest/tsl_parser.cmi \
     ocamltest/tsl_lexer.cmi \
     ocamltest/tsl_ast.cmi \
-    ocamltest/translate.cmi \
     ocamltest/tests.cmi \
     ocamltest/result.cmi \
     ocamltest/options.cmi \
@@ -10140,7 +10139,6 @@ ocamltest/main.cmx : \
     ocamltest/tsl_parser.cmx \
     ocamltest/tsl_lexer.cmx \
     ocamltest/tsl_ast.cmx \
-    ocamltest/translate.cmx \
     ocamltest/tests.cmx \
     ocamltest/result.cmx \
     ocamltest/options.cmx \
@@ -10419,7 +10417,6 @@ ocamltest/ocamltest_unix_real.cmx : \
     otherlibs/unix/unix.cmx
 ocamltest/options.cmo : \
     ocamltest/variables.cmi \
-    ocamltest/translate.cmi \
     ocamltest/tests.cmi \
     utils/misc.cmi \
     driver/compmisc.cmi \
@@ -10428,15 +10425,13 @@ ocamltest/options.cmo : \
     ocamltest/options.cmi
 ocamltest/options.cmx : \
     ocamltest/variables.cmx \
-    ocamltest/translate.cmx \
     ocamltest/tests.cmx \
     utils/misc.cmx \
     driver/compmisc.cmx \
     utils/clflags.cmx \
     ocamltest/actions.cmx \
     ocamltest/options.cmi
-ocamltest/options.cmi : \
-    ocamltest/translate.cmi
+ocamltest/options.cmi :
 ocamltest/result.cmo : \
     ocamltest/result.cmi
 ocamltest/result.cmx : \
@@ -10469,21 +10464,6 @@ ocamltest/tests.cmi : \
     ocamltest/result.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi
-ocamltest/translate.cmo : \
-    ocamltest/tsl_semantics.cmi \
-    ocamltest/tsl_parser.cmi \
-    ocamltest/tsl_lexer.cmi \
-    ocamltest/tsl_ast.cmi \
-    parsing/location.cmi \
-    ocamltest/translate.cmi
-ocamltest/translate.cmx : \
-    ocamltest/tsl_semantics.cmx \
-    ocamltest/tsl_parser.cmx \
-    ocamltest/tsl_lexer.cmx \
-    ocamltest/tsl_ast.cmx \
-    parsing/location.cmx \
-    ocamltest/translate.cmi
-ocamltest/translate.cmi :
 ocamltest/tsl_ast.cmo : \
     parsing/location.cmi \
     ocamltest/tsl_ast.cmi

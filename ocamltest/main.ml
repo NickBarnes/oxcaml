@@ -374,12 +374,6 @@ let () =
   let doit f x = work_done := true; f x in
   List.iter (doit find_test_dirs) Options.find_test_dirs;
   List.iter (doit list_tests) Options.list_tests;
-  let do_file =
-    if Options.translate then
-      Translate.file ~style:Options.style ~compact:Options.compact
-    else
-      test_file
-  in
-  List.iter (doit do_file) Options.files_to_test;
+  List.iter (doit test_file) Options.files_to_test;
   if not !work_done then print_usage();
   if !failed || not !work_done then exit 1
