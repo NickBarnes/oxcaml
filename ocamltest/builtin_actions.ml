@@ -127,6 +127,13 @@ let not_windows = make
     "not running on Windows"
     "running on Windows")
 
+let msvc = make
+  ~name:"msvc"
+  ~description:"Pass if using MSVC / clang-cl"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type = "msvc")
+    "using MSVC / clang-cl"
+    "not using MSVC / clang-cl")
+
 let not_msvc = make
   ~name:"not-msvc"
   ~description:"Pass if not using MSVC / clang-cl"
@@ -136,6 +143,13 @@ let not_msvc = make
 
 let is_clang =
   List.mem "clang" (String.split_on_char '-' Ocamltest_config.c_compiler_vendor)
+
+let clang = make
+  ~name:"clang"
+  ~description:"Pass if using clang"
+  (Actions_helpers.pass_or_skip is_clang
+    "using clang"
+    "not using clang")
 
 let not_clang = make
   ~name:"not-clang"
@@ -421,7 +435,9 @@ let _ =
     libwin32unix;
     windows;
     not_windows;
+    msvc;
     not_msvc;
+    clang;
     not_clang;
     target_windows;
     not_target_windows;
