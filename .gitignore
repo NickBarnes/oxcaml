@@ -235,6 +235,7 @@ META
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 
+/runtime/api-testing
 /runtime/domain_state.inc
 /runtime/caml/m.h
 /runtime/caml/s.h

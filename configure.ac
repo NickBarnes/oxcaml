@@ -219,6 +219,7 @@ AC_SUBST([optional_libraries])
 AC_SUBST([optional_bytecode_tools])
 AC_SUBST([optional_native_tools])
 AC_SUBST([ocamltest_CPP])
+AC_SUBST([ocamltest_CXX])
 AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
 AC_SUBST([unix_directory])
@@ -288,6 +289,8 @@ AC_SUBST([native_runtime_id])
 AC_SUBST([suffixing])
 AC_SUBST([runtime_search])
 AC_SUBST([runtime_search_target])
+AC_SUBST([cc_extra_warnings])
+AC_SUBST([cxx_extra_warnings])
 
 ## Generated files
 
@@ -1035,17 +1038,25 @@ AS_IF([test "x$interpval" = "xyes"],
 AS_CASE([$ocaml_cc_vendor],
   [xlc-*],
     [warn_error_flag=''
+    cc_extra_warnings=''
+    cxx_extra_warnings=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
   [sunc-*],
-    [cc_warnings=""],
+    [cc_extra_warnings=''
+     cxx_extra_warnings=''
+     cc_warnings=''],
   [msvc-*],
     [AS_CASE([$ocaml_cc_vendor],
       [msvc-*-clang-*],
         [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
          warn_error_flag='-WX'],
       [cc_warnings='-W2'
-       warn_error_flag='-WX -options:strict'])],
+       cc_extra_warnings='-permissive-'
+       warn_error_flag='-WX -options:strict'
+       cxx_extra_warnings="$cc_extra_warnings $warn_error_flag"])],
   [warn_error_flag='-Werror'
+  cc_extra_warnings='-Wextra -Wpedantic -pedantic -std=c11'
+  cxx_extra_warnings='-Werror -Wextra -Wpedantic -pedantic'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition -Wundef"])
 
@@ -1068,7 +1079,9 @@ done
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
-    [cc_warnings="$cc_warnings $warn_error_flag"])
+    [cc_warnings="$cc_warnings $warn_error_flag"],
+    [cc_extra_warnings=''
+    cxx_extra_warnings=''])
 
 AS_CASE([$target],
   [*-w64-mingw32*|*-pc-windows],
@@ -2836,7 +2849,8 @@ testsuite/tools/test_in_prefix.opt"],
       [optional_bytecode_tools="$optional_bytecode_tools \
 testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
-    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"],
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"
+    OCAML_CXX_COMPILE_STDCXX_11],
   [build_ocamltest=false
   ocamltest=''])
 

@@ -81,6 +81,11 @@ DEP_FLAGS =
 endif
 COMPUTE_DEPS=@compute_deps@
 
+TEST_CXX = @ocamltest_CXX@
+TEST_CXX_CXXFLAGS = @common_cflags@
+TEST_CXX_CPPFLAGS = @common_cppflags@
+CXXFLAGS ?=
+
 BUILD_PATH_LOGICAL = @srcdir_abs@
 BUILD_PATH_PHYSICAL = @srcdir_abs_real@
 BUILD_MAP_FLAGS = @build_map_flags@
@@ -106,6 +111,9 @@ OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
 OC_BYTECODE_CPPFLAGS = $(OC_INCLUDES) @oc_bytecode_cppflags@
 
 OC_NATIVE_CPPFLAGS = $(OC_INCLUDES) @oc_native_cppflags@
+
+EXTRA_WARNINGS_CFLAGS = @cc_extra_warnings@
+EXTRA_WARNINGS_CXXFLAGS = @cxx_extra_warnings@
 
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at
