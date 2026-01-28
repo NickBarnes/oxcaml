@@ -56,13 +56,6 @@ let interpret_environment_statement env statement = match statement.node with
   | Unset var ->
       Environments.unsetenv (Variables.from_name var.node) env
 
-type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
-
 exception No_such_test_or_action of string
 
 let lookup_test located_name =
@@ -99,18 +92,6 @@ let actions_in_tests tests =
   let f test action_set =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
-
-let rec ast_of_tree (Node (env, test, mods, subs)) =
-  let tst = [Test (Tsl_ast.make_identifier test.Tests.test_name, mods)] in
-  ast_of_tree_aux env tst subs
-
-and ast_of_tree_aux env tst subs =
-  let env = List.map (fun x -> Environment_statement x) env in
-  match List.map ast_of_tree subs with
-  | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
-  | asts -> Ast (env @ tst, asts)
-
-let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
 
 open Printf
 
