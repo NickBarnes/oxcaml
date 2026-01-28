@@ -59,8 +59,6 @@ and token = parse
     }
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMMA }
-  | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
-  | "*" (num+ as n) { TEST_DEPTH (int_of_string n)}
   | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
   | identchar *

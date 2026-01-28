@@ -10494,7 +10494,6 @@ ocamltest/tsl_semantics.cmo : \
     ocamltest/variables.cmi \
     ocamltest/tsl_ast.cmi \
     ocamltest/tests.cmi \
-    parsing/location.cmi \
     ocamltest/environments.cmi \
     ocamltest/actions.cmi \
     ocamltest/tsl_semantics.cmi
@@ -10502,7 +10501,6 @@ ocamltest/tsl_semantics.cmx : \
     ocamltest/variables.cmx \
     ocamltest/tsl_ast.cmx \
     ocamltest/tests.cmx \
-    parsing/location.cmx \
     ocamltest/environments.cmx \
     ocamltest/actions.cmx \
     ocamltest/tsl_semantics.cmi

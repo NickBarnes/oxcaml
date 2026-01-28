@@ -33,10 +33,6 @@ type test_tree =
     string located list *
     (test_tree list)
 
-val test_trees_of_tsl_block :
-  Tsl_ast.tsl_item list ->
-  Tsl_ast.environment_statement located list * test_tree list
-
 val tsl_ast_of_test_trees :
   Tsl_ast.environment_statement located list * test_tree list ->
   Tsl_ast.t

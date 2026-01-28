@@ -127,7 +127,7 @@ let run_test_tree log add_msg behavior env summ ast =
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
         Error Fail
       end
-    | Test (_, name, mods) ->
+    | Test (name, mods) ->
       let locstr =
         if name.loc = Location.none then
           "default"
@@ -204,7 +204,7 @@ let test_file test_filename =
       let default_tests = Tests.default_tests() in
       let make_tree test =
         let id = make_identifier test.Tests.test_name in
-        Ast ([Test (0, id, [])], [])
+        Ast ([Test (id, [])], [])
       in
       Ast ([], List.map make_tree default_tests)
     | _ -> tsl_ast
