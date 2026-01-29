@@ -23,7 +23,7 @@ Working version
 - #14499: in ocamltest, remove support for the legacy
   test syntax (with '***') and the '-translate' option
   to convert from this syntax.
-  (Gabriel Scherer, review by ???)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 ### Manual and documentation:
 
@@ -176,7 +176,7 @@ OCaml 5.5.0
   (Jessie Grosen, review by Antonin Décimo and Nicolás Ojeda Bär)
 
 - #14494: Consistently use macro to test header promotion.
-  (Nick Barnes, review by ???)
+  (Nick Barnes, review by Gabriel Scherer)
 
 ### Code generation and optimizations:
 
