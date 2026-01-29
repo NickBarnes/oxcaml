@@ -10492,6 +10492,12 @@ ocamltest/tsl_parser.cmx : \
     ocamltest/tsl_parser.cmi
 ocamltest/tsl_parser.cmi : \
     ocamltest/tsl_ast.cmi
+ocamltest/tsl_printer.cmo : \
+    ocamltest/tsl_printer.cmi
+ocamltest/tsl_printer.cmx : \
+    ocamltest/tsl_printer.cmi
+ocamltest/tsl_printer.cmi : \
+    ocamltest/tsl_ast.cmi
 ocamltest/tsl_query.cmo : \
     ocamltest/tsl_semantics.cmi \
     ocamltest/tsl_ast.cmi \

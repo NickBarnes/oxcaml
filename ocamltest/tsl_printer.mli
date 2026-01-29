@@ -13,15 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL blocks and operations on test trees *)
-
-open Tsl_ast
-
-val apply_modifiers : Environments.t -> string located -> Environments.t
-
-val interpret_environment_statement :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
-  Environments.t
-
-exception No_such_test_or_action of string
-val lookup_test : string Tsl_ast.located -> Tests.t
+val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit
