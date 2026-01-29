@@ -15,13 +15,25 @@
 
 (* Interpretation of TSL blocks and operations on test trees *)
 
-open Tsl_ast
-
-val apply_modifiers : Environments.t -> string located -> Environments.t
-
-val interpret_environment_statement :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
-  Environments.t
-
 exception No_such_test_or_action of string
 val lookup_test : string Tsl_ast.located -> Tests.t
+
+type behavior =
+  | Skip_all
+  | Run
+
+type summary = Test_result.status = Pass | Skip | Fail
+val string_of_summary : summary -> string
+
+val run_environment_statement :
+  add_msg:(string -> unit) ->
+  report_error:(Location.t -> exn -> string -> string) ->
+  Environments.t ->
+  Tsl_ast.environment_statement Tsl_ast.located ->
+  (Environments.t, unit) result
+
+val run :
+  log:out_channel ->
+  add_msg:(string -> unit) ->
+  report_error:(Location.t -> exn -> string -> string) ->
+  behavior -> Environments.t -> summary -> Tsl_ast.t -> summary

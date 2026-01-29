@@ -15,6 +15,7 @@
 
 (* Interpretation of TSL blocks and operations on test trees *)
 
+open Ocamltest_stdlib
 open Tsl_ast
 
 let apply_modifiers env modifiers_name =
@@ -68,3 +69,91 @@ let lookup_test located_name =
       Tests.test_of_action action
     end
   | Some test -> test
+
+type behavior =
+  | Skip_all
+  | Run
+
+type summary = Test_result.status = Pass | Skip | Fail
+let string_of_summary = Test_result.string_of_status
+
+(* The sequential join passes if both tests pass.
+
+   This implies that a linear sequence of actions, a path along the
+   test tree, is considered successful if all actions passed. *)
+let join_sequential r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, Pass -> Pass
+  | Skip, _ | _, Skip -> Skip
+
+(* The parallel join passes if either test passes.
+
+   This implies that a test formed of several parallel branches is
+   considered successful if at least one of the branches is successful.
+*)
+let join_parallel r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, _ | _, Pass -> Pass
+  | Skip, Skip -> Skip
+
+let run_environment_statement ~add_msg ~report_error env s =
+  match interpret_environment_statement env s with
+  | env -> Ok env
+  | exception e ->
+    let bt = Printexc.get_backtrace () in
+    let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+    Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
+    Error ()
+
+let run ~log ~add_msg ~report_error behavior env summ ast =
+  let run_statement (behavior, env, summ) = function
+    | Environment_statement s ->
+      begin match run_environment_statement ~add_msg ~report_error env s with
+      | Ok env' -> Ok (behavior, env', summ)
+      | Error () -> Error Fail
+      end
+    | Test (name, mods) ->
+      let locstr =
+        if name.loc = Location.none then
+          "default"
+        else
+          Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
+      in
+      let (msg, behavior, env, result) =
+        match behavior with
+        | Skip_all -> ("=> n/a", Skip_all, env, Test_result.skip)
+        | Run ->
+          begin try
+            let testenv = List.fold_left apply_modifiers env mods in
+            let test = lookup_test name in
+            let (result, newenv) = Tests.run log testenv test in
+            let msg = Test_result.string_of_result result in
+            let sub_behavior =
+              if Test_result.is_pass result then Run else Skip_all in
+            (msg, sub_behavior, newenv, result)
+          with e ->
+            let bt = Printexc.get_backtrace () in
+            (report_error name.loc e bt, Skip_all, env, Test_result.fail)
+          end
+      in
+      Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
+      let summ = join_sequential summ result.status in
+      Ok (behavior, env, summ)
+  in
+  let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+    | Error e -> e
+    | Ok (behavior, env, summ) ->
+        (* If [subs] is empty, there are no further test actions to
+           perform: we are at the end of a test path and can report
+           our current summary. Otherwise we continue with each
+           branch, and parallel-join the result summaries. *)
+        begin match subs with
+        | [] -> summ
+        | _ ->
+            List.fold_left join_parallel Skip
+              (List.map (run_tree behavior env summ) subs)
+        end
+  in run_tree behavior env summ ast
