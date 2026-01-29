@@ -22,22 +22,38 @@ type t = {
   reason : string option
 }
 
-val pass : t
+let result_of_status s = { status = s; reason = None }
 
-val skip : t
+let pass = result_of_status Pass
 
-val fail : t
+let skip = result_of_status Skip
 
-val pass_with_reason : string -> t
+let fail = result_of_status Fail
 
-val skip_with_reason : string -> t
+let result_with_reason s r = { status = s; reason = Some r }
 
-val fail_with_reason : string -> t
+let pass_with_reason r = result_with_reason Pass r
 
-val string_of_result : t -> string
+let skip_with_reason r = result_with_reason Skip r
 
-val is_pass : t -> bool
+let fail_with_reason r = result_with_reason Fail r
 
-val is_skip : t -> bool
+let string_of_status = function
+  | Pass -> "passed"
+  | Skip -> "skipped"
+  | Fail -> "failed"
 
-val is_fail : t -> bool
+let string_of_reason = function
+  | None -> ""
+  | Some reason -> (" (" ^ reason ^ ")")
+
+let string_of_result r =
+  "=> "
+  ^ (string_of_status r.status)
+  ^ (string_of_reason r.reason)
+
+let is_pass r = r.status = Pass
+
+let is_skip r = r.status = Skip
+
+let is_fail r = r.status = Fail

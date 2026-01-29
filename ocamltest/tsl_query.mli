@@ -13,27 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL blocks and operations on test trees *)
+val tests_in_tree : Tsl_ast.t -> Tests.TestSet.t
 
-exception No_such_test_or_action of string
-val lookup_test : string Tsl_ast.located -> Tests.t
+val actions_in_test : Tests.t -> Actions.ActionSet.t
 
-type behavior =
-  | Skip_all
-  | Run
-
-type summary = Test_result.status = Pass | Skip | Fail
-val string_of_summary : summary -> string
-
-val run_environment_statement :
-  add_msg:(string -> unit) ->
-  report_error:(Location.t -> exn -> string -> string) ->
-  Environments.t ->
-  Tsl_ast.environment_statement Tsl_ast.located ->
-  (Environments.t, unit) result
-
-val run :
-  log:out_channel ->
-  add_msg:(string -> unit) ->
-  report_error:(Location.t -> exn -> string -> string) ->
-  behavior -> Environments.t -> summary -> Tsl_ast.t -> summary
+val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t

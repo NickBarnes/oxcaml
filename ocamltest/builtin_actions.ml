@@ -28,7 +28,7 @@ let pass = make
   ~description:"Always succeed"
   (fun _log env ->
     let reason = reason_with_fallback env "the pass action always succeeds" in
-    let result = Result.pass_with_reason reason in
+    let result = Test_result.pass_with_reason reason in
     (result, env))
 
 let skip = make
@@ -36,7 +36,7 @@ let skip = make
   ~description:"Always skip the test"
   (fun _log env ->
     let reason = reason_with_fallback env "the skip action always skips" in
-    let result = Result.skip_with_reason reason in
+    let result = Test_result.skip_with_reason reason in
     (result, env))
 
 let fail = make
@@ -44,7 +44,7 @@ let fail = make
   ~description:"Always fail"
   (fun _log env ->
     let reason = reason_with_fallback env "the fail action always fails" in
-    let result = Result.fail_with_reason reason in
+    let result = Test_result.fail_with_reason reason in
     (result, env))
 
 let cd = make
@@ -54,10 +54,10 @@ let cd = make
     let cwd = Environments.safe_lookup Builtin_variables.cwd env in
     begin
       try
-        Sys.chdir cwd; (Result.pass, env)
+        Sys.chdir cwd; (Test_result.pass, env)
       with _ ->
         let reason = "Could not chdir to \"" ^ cwd ^ "\"" in
-        let result = Result.fail_with_reason reason in
+        let result = Test_result.fail_with_reason reason in
         (result, env)
     end)
 
@@ -65,7 +65,7 @@ let dumpenv = make
   ~name:"dumpenv"
   ~description:"Dump the environment"
   (fun log env ->
-    Environments.dump log env; (Result.pass, env))
+    Environments.dump log env; (Test_result.pass, env))
 
 let hasunix = make
   ~name:"hasunix"
@@ -344,21 +344,21 @@ let file_exists_action _log env =
   match Environments.lookup Builtin_variables.file env with
     | None ->
       let reason = reason_with_fallback env "the file variable is undefined" in
-      let result = Result.fail_with_reason reason in
+      let result = Test_result.fail_with_reason reason in
       (result, env)
     | Some filename ->
       if Sys.file_exists filename
       then begin
         let default_reason = Printf.sprintf "File %s exists" filename in
         let reason = reason_with_fallback env default_reason in
-        let result = Result.pass_with_reason reason in
+        let result = Test_result.pass_with_reason reason in
         (result, env)
       end else begin
         let default_reason =
           Printf.sprintf "File %s does not exist" filename
         in
         let reason = reason_with_fallback env default_reason in
-        let result = Result.fail_with_reason reason in
+        let result = Test_result.fail_with_reason reason in
         (result, env)
       end
 let file_exists = make
@@ -382,7 +382,7 @@ let copy_action log env =
   match (src, dst) with
     | (None, _) | (_, None) ->
       let reason = reason_with_fallback env "src or dst are undefined" in
-      let result = Result.fail_with_reason reason in
+      let result = Test_result.fail_with_reason reason in
       (result, env)
     | (Some src, Some dst) ->
       let f =
@@ -391,7 +391,7 @@ let copy_action log env =
         else fun src -> do_copy src dst
       in
       List.iter f (String.words src);
-      (Result.pass, env)
+      (Test_result.pass, env)
 
 let copy = make ~name:"copy" ~description:"Copy a file" copy_action
 

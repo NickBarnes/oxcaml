@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,27 +13,33 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL blocks and operations on test trees *)
+(* Definition of test-result related types and functions *)
 
-exception No_such_test_or_action of string
-val lookup_test : string Tsl_ast.located -> Tests.t
+type status = Pass | Skip | Fail
 
-type behavior =
-  | Skip_all
-  | Run
+val string_of_status : status -> string
 
-type summary = Test_result.status = Pass | Skip | Fail
-val string_of_summary : summary -> string
+type t = {
+  status : status;
+  reason : string option
+}
 
-val run_environment_statement :
-  add_msg:(string -> unit) ->
-  report_error:(Location.t -> exn -> string -> string) ->
-  Environments.t ->
-  Tsl_ast.environment_statement Tsl_ast.located ->
-  (Environments.t, unit) result
+val pass : t
 
-val run :
-  log:out_channel ->
-  add_msg:(string -> unit) ->
-  report_error:(Location.t -> exn -> string -> string) ->
-  behavior -> Environments.t -> summary -> Tsl_ast.t -> summary
+val skip : t
+
+val fail : t
+
+val pass_with_reason : string -> t
+
+val skip_with_reason : string -> t
+
+val fail_with_reason : string -> t
+
+val string_of_result : t -> string
+
+val is_pass : t -> bool
+
+val is_skip : t -> bool
+
+val is_fail : t -> bool
