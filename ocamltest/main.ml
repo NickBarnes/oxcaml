@@ -116,7 +116,7 @@ let string_of_summary = function
   | Fail -> "failed"
   | Skip -> "skipped"
 
-let run_environment_statement ~add_msg env s =
+let run_environment_statement ~add_msg ~report_error env s =
   match interpret_environment_statement env s with
   | env -> Ok env
   | exception e ->
@@ -125,10 +125,10 @@ let run_environment_statement ~add_msg env s =
     Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
     Error ()
 
-let run_test_tree log add_msg behavior env summ ast =
+let run_test_tree ~log ~add_msg ~report_error behavior env summ ast =
   let run_statement (behavior, env, summ) = function
     | Environment_statement s ->
-      begin match run_environment_statement ~add_msg env s with
+      begin match run_environment_statement ~add_msg ~report_error env s with
       | Ok env' -> Ok (behavior, env', summ)
       | Error () -> Error Fail
       end
@@ -281,7 +281,9 @@ let test_file test_filename =
            match stmts with
            | [] -> (env, initial_status, Pass)
            | s :: t ->
-             begin match run_environment_statement ~add_msg env s with
+             begin match
+               run_environment_statement ~add_msg ~report_error env s
+             with
              | Ok env -> loop env t
              | Error () -> (env, Skip_all, Fail)
              end
@@ -292,8 +294,8 @@ let test_file test_filename =
        let common_prefix = " ... testing '" ^ test_basename ^ "'" in
        Printf.printf "%s%!" common_prefix;
        let summary =
-         run_test_tree log add_msg initial_status rootenv initial_summary
-           tsl_ast
+         run_test_tree ~log ~add_msg ~report_error
+           initial_status rootenv initial_summary tsl_ast
        in
        Printf.printf " => %s%s\n%!" (string_of_summary summary)
          (if Options.show_timings && summary = Pass then
