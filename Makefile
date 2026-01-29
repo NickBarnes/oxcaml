@@ -1985,7 +1985,7 @@ ocamltest_CORE = \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
-  result.mli result.ml \
+  test_result.mli test_result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   strace.mli strace.ml \

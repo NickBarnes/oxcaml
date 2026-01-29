@@ -88,9 +88,9 @@ let report_error loc e bt =
   print_exn loc e bt;
   "=> error in test script"
 
-type summary = Result.status = Pass | Skip | Fail
+type summary = Test_result.status = Pass | Skip | Fail
 
-let string_of_summary = Result.string_of_status
+let string_of_summary = Test_result.string_of_status
 
 (* The sequential join passes if both tests pass.
 
@@ -138,19 +138,19 @@ let run_test_tree ~log ~add_msg ~report_error behavior env summ ast =
       in
       let (msg, behavior, env, result) =
         match behavior with
-        | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
+        | Skip_all -> ("=> n/a", Skip_all, env, Test_result.skip)
         | Run ->
           begin try
             let testenv = List.fold_left apply_modifiers env mods in
             let test = Tsl_semantics.lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
-            let msg = Result.string_of_result result in
+            let msg = Test_result.string_of_result result in
             let sub_behavior =
-              if Result.is_pass result then Run else Skip_all in
+              if Test_result.is_pass result then Run else Skip_all in
             (msg, sub_behavior, newenv, result)
           with e ->
             let bt = Printexc.get_backtrace () in
-            (report_error name.loc e bt, Skip_all, env, Result.fail)
+            (report_error name.loc e bt, Skip_all, env, Test_result.fail)
           end
       in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
