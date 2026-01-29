@@ -20,6 +20,11 @@ Working version
 
 ### Tools:
 
+- #14499: in ocamltest, remove support for the legacy
+  test syntax (with '***') and the '-translate' option
+  to convert from this syntax.
+  (Gabriel Scherer, review by ???)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

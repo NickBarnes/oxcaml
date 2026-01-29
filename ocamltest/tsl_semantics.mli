@@ -26,21 +26,6 @@ val interpret_environment_statement :
 exception No_such_test_or_action of string
 val lookup_test : string located -> Tests.t
 
-type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
-
-val test_trees_of_tsl_block :
-  Tsl_ast.tsl_item list ->
-  Tsl_ast.environment_statement located list * test_tree list
-
-val tsl_ast_of_test_trees :
-  Tsl_ast.environment_statement located list * test_tree list ->
-  Tsl_ast.t
-
 val tests_in_tree : Tsl_ast.t -> Tests.TestSet.t
 
 val actions_in_test : Tests.t -> Actions.ActionSet.t

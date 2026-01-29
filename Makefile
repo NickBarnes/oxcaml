@@ -1996,8 +1996,7 @@ ocamltest_CORE = \
   tsl_semantics.mli tsl_semantics.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
-  builtin_actions.mli builtin_actions.ml \
-  translate.mli translate.ml
+  builtin_actions.mli builtin_actions.ml
 
 ocamltest_ocaml_PLUGIN = \
   ocaml_backends.mli ocaml_backends.ml \

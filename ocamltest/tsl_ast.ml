@@ -29,11 +29,8 @@ type environment_statement =
 type tsl_item =
   | Environment_statement of environment_statement located
   | Test of
-    int (* test depth *) *
     string located (* test name *) *
     string located list (* environment modifiers *)
-
-type tsl_block = tsl_item list
 
 type t = Ast of tsl_item list * t list
 

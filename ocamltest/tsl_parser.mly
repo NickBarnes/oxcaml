@@ -36,15 +36,13 @@ let mkenvstmt envstmt =
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
 %token COMMA LEFT_BRACE RIGHT_BRACE SEMI
-%token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
 %token INCLUDE SET UNSET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
 
-%start tsl_block tsl_script
-%type <Tsl_ast.tsl_block> tsl_block
+%start tsl_script
 %type <Tsl_ast.t> tsl_script
 
 %%
@@ -65,26 +63,11 @@ statement_list:
 
 statement:
 | env_item SEMI { $1 }
-| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+| identifier with_environment_modifiers SEMI { Test ($1, $2) }
 
 tsl_script:
 | TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
 | TSL_BEGIN_OCAML_STYLE node TSL_END_OCAML_STYLE { $2 }
-
-tsl_block:
-| TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
-| TSL_BEGIN_OCAML_STYLE tsl_items TSL_END_OCAML_STYLE { $2 }
-
-tsl_items:
-| { [] }
-| tsl_item tsl_items { $1 :: $2 }
-
-tsl_item:
-| test_item { $1 }
-| env_item { $1 }
-
-test_item:
-  TEST_DEPTH identifier with_environment_modifiers { (Test ($1, $2, $3)) }
 
 with_environment_modifiers:
 | { [] }

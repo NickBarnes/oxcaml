@@ -17,13 +17,6 @@
 
 open Tsl_ast
 
-let string_of_location loc =
-  let buf = Buffer.create 64 in
-  let fmt = Format.formatter_of_buffer buf in
-  Location.print_loc fmt loc;
-  Format.pp_print_flush fmt ();
-  Buffer.contents buf
-
 let apply_modifiers env modifiers_name =
   let name = modifiers_name.node in
   let modifier = Environments.Include name in
@@ -63,23 +56,6 @@ let interpret_environment_statement env statement = match statement.node with
   | Unset var ->
       Environments.unsetenv (Variables.from_name var.node) env
 
-type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
-
-let too_deep testname max_level real_level =
-  Printf.eprintf "Test %s should have depth atmost %d but has depth %d\n%!"
-    testname max_level real_level;
-  exit 2
-
-let unexpected_environment_statement s =
-  let locstr = string_of_location s.loc in
-  Printf.eprintf "%s\nUnexpected environment statement\n%!" locstr;
-  exit 2
-
 exception No_such_test_or_action of string
 
 let lookup_test located_name =
@@ -93,53 +69,10 @@ let lookup_test located_name =
     end
   | Some test -> test
 
-let test_trees_of_tsl_block tsl_block =
-  let rec env_of_lines = function
-    | [] -> ([], [])
-    | Environment_statement s :: lines ->
-      let (env', remaining_lines) = env_of_lines lines in
-      (s :: env', remaining_lines)
-    | lines -> ([], lines)
-  and tree_of_lines depth = function
-    | [] -> (None, [])
-    | line::remaining_lines as l ->
-      begin match line with
-        | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, located_name, env_modifiers) ->
-          begin
-            let name = located_name.node in
-            if test_depth > depth then too_deep name depth test_depth
-            else if test_depth < depth then (None, l)
-            else
-              let (env, rem) = env_of_lines remaining_lines in
-              let (trees, rem) = trees_of_lines (depth+1) rem in
-              let test = lookup_test located_name in
-              (Some (Node (env, test, env_modifiers, trees)), rem)
-          end
-      end
-  and trees_of_lines depth lines =
-    let remaining_lines = ref lines in
-    let trees = ref [] in
-    let continue = ref true in
-    while !continue; do
-      let (tree, rem) = tree_of_lines depth !remaining_lines in
-      remaining_lines := rem;
-      match tree with
-        | None -> continue := false
-        | Some t -> trees := t :: !trees
-    done;
-    (List.rev !trees, !remaining_lines) in
-  let (env, rem) = env_of_lines tsl_block in
-  let (trees, rem) = trees_of_lines 1 rem in
-  match rem with
-    | [] -> (env, trees)
-    | (Environment_statement s)::_ -> unexpected_environment_statement s
-    | _ -> assert false
-
 let tests_in_stmt set stmt =
   match stmt with
   | Environment_statement _ -> set
-  | Test (_, name, _) ->
+  | Test (name, _) ->
     begin match lookup_test name with
     | t -> Tests.TestSet.add t set
     | exception No_such_test_or_action _ -> set
@@ -160,18 +93,6 @@ let actions_in_tests tests =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
 
-let rec ast_of_tree (Node (env, test, mods, subs)) =
-  let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
-  ast_of_tree_aux env tst subs
-
-and ast_of_tree_aux env tst subs =
-  let env = List.map (fun x -> Environment_statement x) env in
-  match List.map ast_of_tree subs with
-  | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
-  | asts -> Ast (env @ tst, asts)
-
-let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
-
 open Printf
 
 let print_tsl_ast ~compact oc ast =
@@ -188,7 +109,7 @@ let print_tsl_ast ~compact oc ast =
 
   and print_statements indent stmts =
     match stmts with
-    | Test (_, name, mods) :: tl ->
+    | Test (name, mods) :: tl ->
       pr "%s%s" indent name.node;
       begin match mods with
       | m :: tl ->
