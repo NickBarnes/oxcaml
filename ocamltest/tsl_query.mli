@@ -13,17 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL blocks and operations on test trees *)
+val tests_in_tree : Tsl_ast.t -> Tests.TestSet.t
 
-open Tsl_ast
+val actions_in_test : Tests.t -> Actions.ActionSet.t
 
-val apply_modifiers : Environments.t -> string located -> Environments.t
-
-val interpret_environment_statement :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
-  Environments.t
-
-exception No_such_test_or_action of string
-val lookup_test : string Tsl_ast.located -> Tests.t
-
-val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit
+val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t

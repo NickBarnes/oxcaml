@@ -13,17 +13,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL blocks and operations on test trees *)
-
 open Tsl_ast
 
-val apply_modifiers : Environments.t -> string located -> Environments.t
+let tests_in_stmt set stmt =
+  match stmt with
+  | Environment_statement _ -> set
+  | Test (name, _) ->
+    begin match Tsl_semantics.lookup_test name with
+    | t -> Tests.TestSet.add t set
+    | exception Tsl_semantics.No_such_test_or_action _ -> set
+    end
 
-val interpret_environment_statement :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
-  Environments.t
+let rec tests_in_tree_aux set (Tsl_ast.Ast (stmts, subs)) =
+  let set1 = List.fold_left tests_in_stmt set stmts in
+  List.fold_left tests_in_tree_aux set1 subs
 
-exception No_such_test_or_action of string
-val lookup_test : string Tsl_ast.located -> Tests.t
+let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
 
-val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit
+let actions_in_test test =
+  let add action_set action = Actions.ActionSet.add action action_set in
+  List.fold_left add Actions.ActionSet.empty test.Tests.test_actions
+
+let actions_in_tests tests =
+  let f test action_set =
+    Actions.ActionSet.union (actions_in_test test) action_set in
+  Tests.TestSet.fold f tests Actions.ActionSet.empty

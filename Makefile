@@ -1994,6 +1994,7 @@ ocamltest_CORE = \
   tsl_lexer.mli tsl_lexer.mll \
   modifier_parser.mli modifier_parser.ml \
   tsl_semantics.mli tsl_semantics.ml \
+  tsl_query.mli tsl_query.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
   builtin_actions.mli builtin_actions.ml

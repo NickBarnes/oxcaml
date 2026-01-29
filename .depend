@@ -10118,6 +10118,7 @@ ocamltest/main.cmo : \
     ocamltest/variables.cmi \
     otherlibs/unix/unix.cmi \
     ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_query.cmi \
     ocamltest/tsl_parser.cmi \
     ocamltest/tsl_lexer.cmi \
     ocamltest/tsl_ast.cmi \
@@ -10136,6 +10137,7 @@ ocamltest/main.cmx : \
     ocamltest/variables.cmx \
     otherlibs/unix/unix.cmx \
     ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_query.cmx \
     ocamltest/tsl_parser.cmx \
     ocamltest/tsl_lexer.cmx \
     ocamltest/tsl_ast.cmx \
@@ -10490,6 +10492,22 @@ ocamltest/tsl_parser.cmx : \
     ocamltest/tsl_parser.cmi
 ocamltest/tsl_parser.cmi : \
     ocamltest/tsl_ast.cmi
+ocamltest/tsl_query.cmo : \
+    ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/tsl_query.cmi
+ocamltest/tsl_query.cmx : \
+    ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_ast.cmx \
+    ocamltest/tests.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/tsl_query.cmi
+ocamltest/tsl_query.cmi : \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/actions.cmi
 ocamltest/tsl_semantics.cmo : \
     ocamltest/variables.cmi \
     ocamltest/tsl_ast.cmi \
@@ -10507,8 +10525,7 @@ ocamltest/tsl_semantics.cmx : \
 ocamltest/tsl_semantics.cmi : \
     ocamltest/tsl_ast.cmi \
     ocamltest/tests.cmi \
-    ocamltest/environments.cmi \
-    ocamltest/actions.cmi
+    ocamltest/environments.cmi
 ocamltest/variables.cmo : \
     ocamltest/variables.cmi
 ocamltest/variables.cmx : \

@@ -140,7 +140,7 @@ let run_test_tree log add_msg behavior env summ ast =
         | Run ->
           begin try
             let testenv = List.fold_left apply_modifiers env mods in
-            let test = lookup_test name in
+            let test = Tsl_semantics.lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
             let msg = Result.string_of_result result in
             let sub_behavior =
@@ -209,8 +209,8 @@ let test_file test_filename =
       Ast ([], List.map make_tree default_tests)
     | _ -> tsl_ast
   in
-  let used_tests = tests_in_tree tsl_ast in
-  let used_actions = actions_in_tests used_tests in
+  let used_tests = Tsl_query.tests_in_tree tsl_ast in
+  let used_actions = Tsl_query.actions_in_tests used_tests in
   let action_names =
     let f act names = String.Set.add (Actions.name act) names in
     Actions.ActionSet.fold f used_actions String.Set.empty in
