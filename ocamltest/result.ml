@@ -39,16 +39,18 @@ let skip_with_reason r = result_with_reason Skip r
 let fail_with_reason r = result_with_reason Fail r
 
 let string_of_status = function
-  | Pass -> "=> passed"
-  | Skip -> "=> skipped"
-  | Fail -> "=> failed"
+  | Pass -> "passed"
+  | Skip -> "skipped"
+  | Fail -> "failed"
 
 let string_of_reason = function
   | None -> ""
   | Some reason -> (" (" ^ reason ^ ")")
 
 let string_of_result r =
-  (string_of_status r.status) ^ (string_of_reason r.reason)
+  "=> "
+  ^ (string_of_status r.status)
+  ^ (string_of_reason r.reason)
 
 let is_pass r = r.status = Pass
 

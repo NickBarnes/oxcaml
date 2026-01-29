@@ -17,6 +17,8 @@
 
 type status = Pass | Skip | Fail
 
+val string_of_status : status -> string
+
 type t = {
   status : status;
   reason : string option

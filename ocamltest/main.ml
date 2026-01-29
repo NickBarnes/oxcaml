@@ -90,6 +90,8 @@ let report_error loc e bt =
 
 type summary = Result.status = Pass | Skip | Fail
 
+let string_of_summary = Result.string_of_status
+
 (* The sequential join passes if both tests pass.
 
    This implies that a linear sequence of actions, a path along the
@@ -110,11 +112,6 @@ let join_parallel r1 r2 =
   | Fail, _ | _, Fail -> Fail
   | Pass, _ | _, Pass -> Pass
   | Skip, Skip -> Skip
-
-let string_of_summary = function
-  | Pass -> "passed"
-  | Fail -> "failed"
-  | Skip -> "skipped"
 
 let run_environment_statement ~add_msg ~report_error env s =
   match interpret_environment_statement env s with
