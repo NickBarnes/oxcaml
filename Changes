@@ -25,6 +25,10 @@ Working version
   to convert from this syntax.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #14502: in ocamltest, `not <action>` negates a
+  predicate-like action.
+  (Gabriel Scherer, review by Olivier Nicole)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
