@@ -116,16 +116,21 @@ let string_of_summary = function
   | Fail -> "failed"
   | Skip -> "skipped"
 
+let run_environment_statement ~add_msg env s =
+  match interpret_environment_statement env s with
+  | env -> Ok env
+  | exception e ->
+    let bt = Printexc.get_backtrace () in
+    let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+    Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
+    Error ()
+
 let run_test_tree log add_msg behavior env summ ast =
   let run_statement (behavior, env, summ) = function
     | Environment_statement s ->
-      begin match interpret_environment_statement env s with
-      | env -> Ok (behavior, env, summ)
-      | exception e ->
-        let bt = Printexc.get_backtrace () in
-        let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-        Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-        Error Fail
+      begin match run_environment_statement ~add_msg env s with
+      | Ok env' -> Ok (behavior, env', summ)
+      | Error () -> Error Fail
       end
     | Test (name, mods) ->
       let locstr =
@@ -276,14 +281,9 @@ let test_file test_filename =
            match stmts with
            | [] -> (env, initial_status, Pass)
            | s :: t ->
-             begin match interpret_environment_statement env s with
-             | env -> loop env t
-             | exception e ->
-               let bt = Printexc.get_backtrace () in
-               let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-               Printf.ksprintf add_msg "line %d %s" line
-                 (report_error s.loc e bt);
-               (env, Skip_all, Fail)
+             begin match run_environment_statement ~add_msg env s with
+             | Ok env -> loop env t
+             | Error () -> (env, Skip_all, Fail)
              end
          in
          loop rootenv rootenv_statements
