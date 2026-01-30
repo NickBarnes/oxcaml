@@ -1,7 +1,7 @@
 (* TEST
  modules = "stubs.c";
  readonly_files = "all-includes.h";
- not-msvc;
+ not msvc;
  flags = "-ccopt -x -ccopt c++ -ccopt -std=c++11";
 *)
 

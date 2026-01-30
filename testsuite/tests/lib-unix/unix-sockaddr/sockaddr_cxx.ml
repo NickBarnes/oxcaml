@@ -1,5 +1,5 @@
 (* TEST
- not-msvc;
+ not msvc;
  readonly_files = "sockaddr_cxx_aux.cpp";
  hasunix;
  include unix;
