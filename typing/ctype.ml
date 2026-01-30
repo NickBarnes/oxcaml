@@ -789,11 +789,13 @@ let rec check_scope_escape mark env level ty =
             raise_escape_exn (Constructor p)
         end
     | Tpackage ({pack_path = p} as pack) when level < Path.scope p ->
-        let p' = Env.normalize_modtype_path env p in
-        if Path.same p p' then raise_escape_exn (Module_type p);
-        check_scope_escape mark env level
-          (newty2 ~level:orig_level
-            (Tpackage {pack with pack_path = p'}))
+        begin match Env.try_normalize_modtype_path env p with
+        | None -> raise_escape_exn (Module_type p)
+        | Some p' ->
+          check_scope_escape mark env level
+            (newty2 ~level:orig_level
+              (Tpackage {pack with pack_path = p'}))
+        end
     | _ ->
         iter_type_expr (check_scope_escape mark env level) ty
     end;
@@ -863,11 +865,13 @@ let rec update_level env level expand ty =
           set_level ();
           iter_type_expr (update_level env level expand) ty
         end
-    | Tpackage ({pack_path = p} as pack) when level < Path.scope p ->
-        let p' = Env.normalize_modtype_path env p in
-        if Path.same p p' then raise_escape_exn (Module_type p);
-        set_type_desc ty (Tpackage {pack with pack_path = p'});
-        update_level env level expand ty
+    | Tpackage pack when level < Path.scope pack.pack_path ->
+        begin match Env.try_normalize_modtype_path env pack.pack_path with
+        | None -> raise_escape_exn (Module_type pack.pack_path)
+        | Some pack_path ->
+          set_type_desc ty (Tpackage {pack with pack_path});
+          update_level env level expand ty
+        end
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
         set_name nm None;
@@ -1614,9 +1618,10 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       match find_type_expansion path env with
       | exception Not_found ->
           (* another way to expand is to normalize the path itself *)
-          let path' = Env.normalize_type_path None env path in
-          if Path.same path path' then raise Cannot_expand
-          else newty3 ~level ~scope (Tconstr (path', args, abbrev))
+          begin match Env.try_normalize_type_path None env path with
+          | None -> raise Cannot_expand
+          | Some path' -> newty3 ~level ~scope (Tconstr (path', args, abbrev))
+          end
       | (params, body, expansion_scope) ->
           (* prerr_endline
              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
