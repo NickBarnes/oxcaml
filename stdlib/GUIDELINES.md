@@ -3,11 +3,11 @@
 The OCaml standard library is developed according to the following
 design guidelines.
 
-1. **Scope**. The standard library provides support for the
-   linguistic idioms OCaml supports or promotes. It also establishes
-   the minimal common ground for interoperatibility that enables the software
-   libraries for today's and tomorrow's technologies to be built by language users
-   in a usable, lean, and modular way.
+1. **Scope**. The standard library provides support for the linguistic
+   idioms OCaml supports or promotes. It also establishes the minimal
+   common ground for interoperatibility that enables the software
+   libraries for today's and tomorrow's technologies to be built by
+   language users in a usable, lean, and modular way.
 
 2. **Consistency**. The standard library strives for consistency of idioms
    and naming. However given its long past and future history,
@@ -21,11 +21,11 @@ design guidelines.
    by language users. Additions that are made for the sake of
    consistency, regardless of usage, may not be welcomed.
 
-4. **Ergonomics**. The standard library considers human factors as a
-   cornerstone of its development. It favors excellent code reading
-   with minimal cognitive overhead. It favors excellent code writing
-   by luring programmers to ask themselves the right questions about
-   the problem they are submitting to the standard library.
+4. **Ergonomics**. The standard library considers human factors as
+   a cornerstone of its development. It favors excellent code reading with
+   minimal cognitive overhead. It favors excellent code writing by luring
+   programmers to ask themselves the right questions about the problem
+   they are solving with the standard library.
 
 5. **Generality**. The standard library aims to solve the common cases
    simply. Specialized needs may be addressed only if they do not
