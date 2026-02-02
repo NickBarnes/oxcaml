@@ -2668,7 +2668,7 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 # The numeric opcodes
 
 bytecomp/opcodes.ml: bytecomp/opcodes.ml.c runtime/caml/opcodes.h
-	$(CPP) -I runtime $< > $@
+	$(V_GEN)$(CPP) -I runtime $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(V_GEN)$(CAMLC) -i $< > $@
