@@ -107,6 +107,7 @@ according to your operating system. The tools and libraries necessary
 for running tests should also be built. This can be achieved by running
 the following command from `${OCAMLSRCDIR}`:
 
+[source,bash]
 ----
 make -C testsuite lib tools
 ----
@@ -126,6 +127,7 @@ is already in your `PATH`, like `~/bin`.
 Consider the following OCaml implementation of the classical "Hello, world!"
 program written to a `hello.ml` file:
 
+[source,ocaml]
 ----
 let _ = print_endline "Hello, world!"
 ----
@@ -138,6 +140,7 @@ above into a test usable by ocamltest to verify this:
 . First, we add a special comment at the very beginning of our `hello.ml`
   file to make it explicit that it is a test:
 +
+[source,ocaml]
 ----
 (* TEST *)
 
@@ -148,6 +151,7 @@ let _ = print_endline "Hello, world!"
   expect that compiling the test produces no output at all and that its
   execution produces one single line:
 +
+[source,text]
 ----
 Hello, world!
 ----
@@ -161,12 +165,14 @@ compilation would actually cause a test failure.
 . We can now ask ocamltest to run our test program with the
   following command:
 +
+[source,bash]
 ----
 ocamltest hello.ml
 ----
 +
 Running this would produce an output similar to this one:
 +
+[source,text]
 ----
  ... testing 'hello.ml' with 1 (native) => passed
  ... testing 'hello.ml' with 2 (bytecode) => passed
@@ -182,6 +188,7 @@ be examined in the next sub-section.
   `newtest`) located somewhere below `testsuite/tests` in the compiler's
   source tree. Once this is done, the command
 +
+[source,bash]
 ----
 make all
 ----
@@ -222,6 +229,7 @@ produced by the test. Although it is too long to be reproduced here,
 it is recommended to go through it quickly to get an idea of its
 structure. Here is how it starts:
 
+[source,text]
 ----
 Specified modules: hello.ml
 Source modules: hello.ml
@@ -317,6 +325,7 @@ in chapters <<builtins>> and <<ocaml-specific>>.
 
 Assume our `hello.ml` example is modified as follows:
 
+[source,ocaml]
 ----
 (* TEST *)
 
@@ -337,6 +346,7 @@ required steps to achieve this:
 
 . We slightly modify the test block in `hello.ml`, as follows:
 +
+[source,ocaml]
 ----
 (* TEST
   flags = "-w +33";
@@ -353,8 +363,9 @@ required steps to achieve this:
   make sure it is what we expect) and to move to the reference file.
   Thus, we do:
 +
+[source,bash]
 ----
-$ ocamltest hello.ml
+ocamltest hello.ml
 ----
 +
 which fails, unsurprisingly, and shows us the paths to the file
@@ -363,15 +374,17 @@ expected reference file. We also see what the compiler produced as
 output but we can double-check that the output is what we expect as a
 reference:
 +
+[source,bash]
 ----
-$ cat _ocamltest/hello/ocamlc.byte/ocamlc.byte.output
+cat _ocamltest/hello/ocamlc.byte/ocamlc.byte.output
 ----
 +
 which shows the warning we expect from the compiler. We can thus move
 this file to the reference file:
 +
+[source,bash]
 ----
-$ mv _ocamltest/hello/ocamlc.byte/ocamlc.byte.output hello.compilers.reference
+mv _ocamltest/hello/ocamlc.byte/ocamlc.byte.output hello.compilers.reference
 ----
 +
 and if we now run ocamltest again, all the tests pass.
@@ -400,18 +413,21 @@ expected to be empty.
 Let's start with our original `hello.ml` test program and extract the
 greeting logic into a distinct `greet.ml` module:
 
+[source,ocaml]
 ----
 let greet guest = Printf.printf "Hello, %s!\n" guest
 ----
 
 Let's also write an interface, `greet.mli`:
 
+[source,ocaml]
 ----
 val greet : string -> unit
 ----
 
 Our `hello.ml` test program can then be rewritten as follows:
 
+[source,ocaml]
 ----
 (* TEST
   modules = "greet.ml";
@@ -425,6 +441,7 @@ warnings is deleted, running ocamltest on `hello.ml` should work. It
 will also be worth looking at the first two lines of the log file generated
 while running the test. It says:
 
+[source,text]
 ----
 Specified modules: greet.ml hello.ml
 Source modules: greet.mli greet.ml hello.ml
@@ -447,6 +464,7 @@ ocamltest, if they exist.
 Assume we want to use the following program to make sure regular
 expressions as implemented by the `Str` library work as expected:
 
+[source,ocaml]
 ----
 let hello_re = Str.regexp "^Hello, .+!$"
 
@@ -475,6 +493,7 @@ library file depending on whether we are producing bytecode or native
 programs. So, here is how the previous program can be annotated so that
 it becomes a test:
 
+[source,ocaml]
 ----
 (* TEST
   directories += " ${ocamlsrcdir}/otherlibs/str ";
@@ -491,18 +510,21 @@ many other languages, like the bash shell. Moreover, it is the first
 time we meet the `+=` operator which concatenates a value to a variable.
 More precisely,
 
+[source,ocaml]
 ----
 foo += "bar"
 ----
 
 is equivalent to
 
+[source,ocaml]
 ----
 foo = "${foo}bar"
 ----
 
 and not to
 
+[source,ocaml]
 ----
 foo = "${foo} bar"
 ----
@@ -534,6 +556,7 @@ Environment modifiers have to be defined in ocamltest itself and can
 then be used with the `include` directive. For instance, the previous
 test block is actually written as follows:
 
+[source,ocaml]
 ----
 (* TEST
   include str;
@@ -553,6 +576,7 @@ test should be skipped because it is irrelevant. To illustrate this,
 here is how our original `hello.ml` test program should be annotated so
 that it is run only on Unix platforms:
 
+[source,ocaml]
 ----
 (* TEST
   unix;
@@ -578,12 +602,14 @@ or skips.
 With this information in mind, it can be seen that the smallest test
 block
 
+[source,ocaml]
 ----
 (* TEST *)
 ----
 
 is actually equivalent to
 
+[source,ocaml]
 ----
 (* TEST
   {
@@ -597,6 +623,7 @@ is actually equivalent to
 
 One common error when designing tests is to believe that a block like
 
+[source,ocaml]
 ----
 (* TEST
   unix;
@@ -613,6 +640,7 @@ explicit about which tests to run. So the correct way to write the
 erroneous block above is the use shown at the beginning of this section,
 namely:
 
+[source,ocaml]
 ----
 (* TEST
   unix;
@@ -631,6 +659,7 @@ sub-blocks (unless overridden at some point).
 
 For instance, given the following blocks:
 
+[source,ocaml]
 ----
 (* TEST
   foo = "abc";
@@ -688,6 +717,7 @@ chapter <<ocaml-specific>>.
 
 So, here is a toy example of an `expect` test:
 
+[source,ocaml]
 ----
 (* TEST
   expect;
@@ -722,6 +752,7 @@ explain why it failed or skipped, as will be explained in chapter
 original `hello.ml` example. Our annotated program would look as
 follows:
 
+[source,ocaml]
 ----
 (* TEST
   script = "${test_source_directory}/faketest.sh";
@@ -733,6 +764,7 @@ let _ = print_endline "Hello, world!"
 
 And here is `faketest.sh`, make sure it is executable:
 
+[source,bash]
 ----
 #!/bin/sh
 exit ${TEST_PASS}
@@ -740,6 +772,7 @@ exit ${TEST_PASS}
 
 This should be enough for the following command to work:
 
+[source,bash]
 ----
 ocamltest hello.ml
 ----
@@ -748,6 +781,7 @@ This of course tests nothing and a real test script should actually do
 something before returning its result. Let's however see how we can
 make the script test fail gracefully:
 
+[source,bash]
 ----
 #!/bin/sh
 echo Why should this pass in the first place > ${ocamltest_response}
@@ -757,6 +791,7 @@ exit ${TEST_FAIL}
 Running ocamltest on our `hello.ml` program again produces the following
 output:
 
+[source,text]
 ----
  ... testing 'hello.ml' with 1 (script) => failed (Why should this pass in the first place)
 ----
@@ -764,6 +799,13 @@ output:
 In addition, the script can write lines of the form `variable="string"`, or
 `variable+="string"`, or `-variable`, to file `${ocamltest_response}`, to set, append to,
 and unset ocamltest environment variables, respectively.
+
+[source,ocaml]
+----
+variable="string"
+variable+="string"
+-variable
+----
 
 [#concepts]
 == Key concepts
@@ -784,6 +826,7 @@ The list of builtin variables can be obtained by running `ocamltest
 
 Environment variables for a test can be set using:
 
+[source,ocaml]
 ----
 set VARIABLE_NAME="value";
 ----
@@ -793,6 +836,7 @@ in the test header (the quotes are mandatory).
 On the contrary, you can ensure that an environment variable is not set when
 the test runs with:
 
+[source,ocaml]
 ----
 unset VARIABLE_NAME;
 ----
