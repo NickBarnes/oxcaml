@@ -96,13 +96,13 @@ does not need to be installed.
 The sources can be downloaded either as an archive, or directly cloned
 through git, which seems more appropriate in the context of writing ones
 own tests. Refer to
-`INSTALL.adoc` (and also to `README.win32.adoc` if you are on Windows) to
+xref:../INSTALL.adoc[] (and also to xref:../README.win32.adoc[] if you are on Windows) to
 learn how to get the sources of the OCaml compiler and to compile them.
 
 In the remainder of this manual, we will assume that the sources of the
 OCaml compiler have been extracted in the `${OCAMLSRCDIR}` directory (for
 instance `${HOME}/src/ocaml`) and that you have successfully configured
-and compiled them as described in `INSTALL.adoc` or `README.win32.adoc`,
+and compiled them as described in xref:../INSTALL.adoc[] or xref:../README.win32.adoc[],
 according to your operating system. The tools and libraries necessary
 for running tests should also be built. This can be achieved by running
 the following command from `${OCAMLSRCDIR}`:
