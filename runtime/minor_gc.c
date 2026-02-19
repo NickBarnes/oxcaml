@@ -184,10 +184,6 @@ Caml_inline header_t get_header_val(value v) {
   return spin_on_header(v);
 }
 
-header_t caml_get_header_val(value v) {
-  return get_header_val(v);
-}
-
 
 static int try_update_object_header(value v, volatile value *p, value result,
                                     mlsize_t infix_offset) {
