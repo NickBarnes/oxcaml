@@ -1125,7 +1125,7 @@ let emit_instr_debug env i =
   `{emit_label lbl}:\n`;
   emit_instr env i;
   let sz = Size.instr_size env.f i.desc * 4 in
-  `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
+  `	.ifgt (. - {emit_label lbl}) - {emit_int sz}\n`;
   `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
   `	.endif\n`
 
@@ -1136,7 +1136,7 @@ let rec emit_all env lbl_start acc i =
      if debug then begin
        (* acc measures in units of 32-bit instructions *)
        let sz = acc * 4 in
-       `	.ifne (. - {emit_label lbl_start}) - {emit_int sz}\n`;
+       `	.ifgt (. - {emit_label lbl_start}) - {emit_int sz}\n`;
        `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
        `	.endif\n`;
        end
