@@ -77,18 +77,14 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
-<<<<<<< oxcaml
-CAMLextern value caml_raise_async_if_exception(value res, const char* where);
+CAMLextern value caml_raise_async_if_exception(caml_result res, const char* where);
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_async(value res)
 CAMLnoreturn_end;
-||||||| upstream-base
-CAMLextern value caml_raise_if_exception(value res);
-=======
+
 /* from runtime/sync.c */
 CAMLextern void caml_check_error(int err, char const * msg);
->>>>>>> upstream-incoming
 
 #endif /* CAML_INTERNALS */
 
@@ -114,28 +110,16 @@ CAMLnoret CAMLextern void caml_failwith_value (value msg);
 CAMLnoret CAMLextern void caml_invalid_argument (char const *msg);
 CAMLnoret CAMLextern void caml_invalid_argument_value (value msg);
 CAMLnoret CAMLextern void caml_raise_out_of_memory (void);
-<<<<<<< oxcaml
-
 CAMLnoret CAMLextern void caml_raise_out_of_fibers (void);
-
-||||||| upstream-base
-
-=======
->>>>>>> upstream-incoming
 CAMLnoret CAMLextern void caml_raise_stack_overflow (void);
 CAMLnoret CAMLextern void caml_raise_sys_error (value);
 CAMLnoret CAMLextern void caml_raise_end_of_file (void);
 CAMLnoret CAMLextern void caml_raise_zero_divide (void);
 CAMLnoret CAMLextern void caml_raise_not_found (void);
 CAMLnoret CAMLextern void caml_array_bound_error (void);
-<<<<<<< oxcaml
 
 CAMLnoret CAMLextern void caml_array_align_error (void);
 
-||||||| upstream-base
-
-=======
->>>>>>> upstream-incoming
 CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
 
 /* Non-raising variants of the above functions. The exception is
@@ -165,6 +149,15 @@ CAMLextern value caml_exception_sys_blocked_io (void);
 /* Returns the value of a [caml_result] or raises the exception.
    This function replaced [caml_raise_if_exception] in 5.3. */
 Caml_inline value caml_get_value_or_raise (struct caml_result_private result)
+{
+  if (result.is_exception)
+    check_async(
+    caml_raise(result.data);
+  else
+    return result.data;
+}
+
+Caml_inline value caml_get_value_or_raise_async (struct caml_result_private result)
 {
   if (result.is_exception)
     caml_raise(result.data);
