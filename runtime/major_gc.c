@@ -503,6 +503,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
           preserve_data = false;
       }
     }
+    budget -= Whsize_wosize(i);
 
     if (force_alive) preserve_data = true;
 
