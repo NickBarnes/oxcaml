@@ -421,11 +421,31 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
           Oide_dot (tree_of_path (Some Type) p, s)
       | Pext_ty ->
           tree_of_path None p
+      | Punboxed_ty ->
+          Oide_hash (tree_of_path namespace p)
     end
 
+let instance_name global =
+  let rec string_of_global global =
+    let ({ head; args } : Global_module.Name.t) = global in
+    String.concat "" (head :: List.map string_of_arg args)
+  and string_of_arg arg =
+    let ({ param; value } : Global_module.Name.argument) = arg in
+    Printf.sprintf "(%s)(%s)"
+      (Global_module.Parameter_name.to_string param) (string_of_global value)
+  in
+  let printed_name =
+    string_of_global global ^ " [@jane.non_erasable.instances]"
+  in
+  { printed_name }
+
 let tree_of_path ?disambiguation namespace p =
-  tree_of_path ?disambiguation namespace
-    (rewrite_double_underscore_paths !printing_env p)
+  let p = rewrite_double_underscore_paths !printing_env p in
+  match p with
+  | Pident id when Ident.is_instance id ->
+    Oide_ident (instance_name (Ident.to_global_exn id))
+  | _ ->
+    tree_of_path ?disambiguation namespace p
 
 
 (* Print a recursive annotation *)
