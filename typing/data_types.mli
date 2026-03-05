@@ -45,7 +45,10 @@ type constructor_description =
 val equal_constr :
     constructor_description ->  constructor_description -> bool
 
-(* Constructors may be the same, given potential rebinding. *)
+(* Comparison of tags to store them in sets. *)
+val compare_tag :  tag -> tag -> int
+
+(* Constructors may be the same, given potential rebinding *)
 val may_equal_constr :
     constructor_description ->  constructor_description -> bool
 
