@@ -345,7 +345,8 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
       (fun (c, n, i) -> make (not n) (not c) (not abstract || i))
       required
   | { type_kind = _; type_manifest = Some _ }
-  | { type_kind = Type_record _ | Type_variant _; type_manifest = _ } ->
+  | { type_kind = Type_record _ | Type_record_unboxed_product _
+                 | Type_variant _; type_manifest = _ } ->
     let mn =
       match decl.type_manifest with
         None -> []

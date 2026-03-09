@@ -137,8 +137,6 @@ exception Cannot_unify_universal_variables
 
 exception Out_of_scope_universal_variable
 
-exception Matches_failure of Env.t * unification_error
-
 exception Incompatible
 
 (**** Control tracing of GADT instances *)
@@ -333,22 +331,6 @@ let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
 let newmono ty = newty (Tpoly(ty, []))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
-
-(**** Control variable stage in inference *)
-
-let rec update_variable_stage stage_offset ty name jkind =
-  if stage_offset = 0 then ()
-  else if stage_offset < 0 then begin
-    let v = newvar2 ?name (get_level ty) jkind in
-    let ty' = newty2 ~level:(get_level ty) (Tquote v) in
-    link_type ty ty';
-    update_variable_stage (stage_offset + 1) v name jkind
-  end else begin
-    let v = newvar2 ?name (get_level ty) jkind in
-    let ty' = newty2 ~level:(get_level ty) (Tsplice v) in
-    link_type ty ty';
-    update_variable_stage (stage_offset - 1) v name jkind
-  end
 
 (**** information for [Typecore.unify_pat_*] ****)
 
@@ -864,11 +846,6 @@ let duplicate_class_type ty =
                          (*  Type level manipulation  *)
                          (*****************************)
 
-let rec lower_all ty =
-  if get_level ty > !current_level then begin
-    set_level ty !current_level;
-    iter_type_expr lower_all ty
-  end
 
 (*
    Build a copy of a type in which nodes reachable through a path composed

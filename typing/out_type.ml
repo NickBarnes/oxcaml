@@ -56,6 +56,7 @@ let in_printing_env f = Env.without_cmis f !printing_env
     | Type
     | Constructor
     | Label
+    | Unboxed_label
     | Module
     | Module_type
     | Extension_constructor
@@ -71,7 +72,8 @@ module Namespace = struct
     | Module_type -> 2
     | Class -> 3
     | Class_type -> 4
-    | Extension_constructor | Value | Constructor | Label -> 5
+    | Extension_constructor | Value | Constructor | Label
+    | Unboxed_label -> 5
      (* we do not handle those component *)
 
   let size = 1 + id Value
@@ -87,11 +89,11 @@ module Namespace = struct
     let to_lookup f lid = fst @@ in_printing_env (f (Lident lid)) in
     function
     | Some Type -> to_lookup Env.find_type_by_name
-    | Some Module -> to_lookup Env.find_module_by_name
-    | Some Module_type -> to_lookup Env.find_modtype_by_name
+    | Some Module -> to_lookup Env.find_module_by_name_lazy
+    | Some Module_type -> to_lookup Env.find_modtype_by_name_lazy
     | Some Class -> to_lookup Env.find_class_by_name
     | Some Class_type -> to_lookup Env.find_cltype_by_name
-    | None | Some(Value|Extension_constructor|Constructor|Label) ->
+    | None | Some(Value|Extension_constructor|Constructor|Label|Unboxed_label) ->
          fun _ -> raise Not_found
 
   let location namespace id =
@@ -103,7 +105,8 @@ module Namespace = struct
         | Some Module_type -> (in_printing_env @@ Env.find_modtype path).mtd_loc
         | Some Class -> (in_printing_env @@ Env.find_class path).cty_loc
         | Some Class_type -> (in_printing_env @@ Env.find_cltype path).clty_loc
-        | Some (Extension_constructor|Value|Constructor|Label) | None ->
+        | Some (Extension_constructor|Value|Constructor|Label|Unboxed_label)
+        | None ->
             Location.none
       ) with Not_found -> None
 
@@ -157,7 +160,7 @@ module Ident_conflicts = struct
 
   let pp_explanation ppf r=
     Fmt.fprintf ppf "@[<v 2>%a:@,Definition of %s %a@]"
-      Location.Doc.loc r.location (Sig_component_kind.to_string r.kind)
+      (Location.Doc.loc ~capitalize_first:true) r.location (Sig_component_kind.to_string r.kind)
       Style.inline_code r.name
 
   let print_located_explanations ppf l =
@@ -290,7 +293,8 @@ let indexed_name namespace id =
     | Module_type -> Env.find_modtype_index id env
     | Class -> Env.find_class_index id env
     | Class_type-> Env.find_cltype_index id env
-    | Value | Extension_constructor | Constructor | Label -> None
+    | Value | Extension_constructor | Constructor | Label
+    | Unboxed_label -> None
   in
   let index =
     match M.find_opt (Ident.name id) !bound_in_recursion with
@@ -385,7 +389,7 @@ let rec rewrite_double_underscore_paths env p =
           (Location.mknoloc (Unit_info.modulize
              (String.sub name (i + 2) (String.length name - i - 2)))))
       in
-      match Env.find_module_by_name better_lid env with
+      match Env.find_module_by_name_lazy better_lid env with
       | exception Not_found -> p
       | p', _ ->
           if module_path_is_an_alias_of env p' ~alias_of:p then
@@ -483,7 +487,7 @@ type best_path = Paths of Path.t list | Best of Path.t
     cache for short-paths
  *)
 let printing_old = ref Env.empty
-let printing_pers = ref String.Set.empty
+let printing_pers = ref Compilation_unit.Name.Set.empty
 (** {!printing_old} and  {!printing_pers} are the keys of the one-slot cache *)
 
 let printing_depth = ref 0
@@ -548,7 +552,7 @@ let rec path_size = function
 
 let same_printing_env env =
   let used_pers = Env.used_persistent () in
-  Env.same_types !printing_old env && String.Set.equal !printing_pers used_pers
+  Env.same_types !printing_old env && Compilation_unit.Name.Set.equal !printing_pers used_pers
 
 let set_printing_env env =
   printing_env := env;
@@ -597,6 +601,7 @@ let rec lid_of_path = function
       Longident.Lapply
         (Location.mknoloc (lid_of_path p1), Location.mknoloc (lid_of_path p2))
   | Path.Pextra_ty (p, Pext_ty) -> lid_of_path p
+  | Path.Pextra_ty (p, Punboxed_ty) -> lid_of_path p
 
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in
@@ -823,7 +828,7 @@ end = struct
 
   let add_named_var tty =
     match tty.desc with
-      Tvar (Some name) | Tunivar (Some name) ->
+      Tvar { name = Some name; _ } | Tunivar { name = Some name; _ } ->
         if List.mem name !named_vars then () else
         named_vars := name :: !named_vars
     | _ -> ()
@@ -883,7 +888,7 @@ end = struct
       try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
         match t.desc with
-          Tvar (Some name) | Tunivar (Some name) ->
+          Tvar { name = Some name; _ } | Tunivar { name = Some name; _ } ->
             (* Some part of the type we've already printed has assigned another
              * unification variable to that name. We want to keep the name, so
              * try adding a number until we find a name that's not taken. *)
@@ -1061,9 +1066,15 @@ let rec tree_of_typexp mode ty =
         let non_gen = is_non_gen mode ty in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
         Otyp_var (non_gen, Variable_names.name_of_type name_gen tty)
-    | Tarrow(l, ty1, ty2, _) ->
+    | Tarrow((l, _, _), ty1, ty2, _) ->
         let lab =
-          if !print_labels || is_optional l then l else Nolabel
+          if !print_labels || is_optional l then l else Types.Nolabel
+        in
+        let outcome_lab : Types.arg_label -> Outcometree.arg_label = function
+          | Types.Nolabel -> Nolabel
+          | Types.Labelled s -> Labelled s
+          | Types.Optional s -> Optional s
+          | Types.Position s -> Position s
         in
         let t1 =
           if is_optional l then
@@ -1073,7 +1084,7 @@ let rec tree_of_typexp mode ty =
                 tree_of_typexp mode ty
             | _ -> Otyp_stuff "<hidden>"
           else tree_of_typexp mode ty1 in
-        Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
+        Otyp_arrow (outcome_lab lab, [], t1, tree_of_typexp mode ty2)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_labeled_typlist mode tyl)
     | Tconstr(p, tyl, _abbrev) ->
@@ -1140,7 +1151,8 @@ let rec tree_of_typexp mode ty =
           (* Make the names delayed, so that the real type is
              printed once when used as proxy *)
           List.iter Aliases.add_delayed tyl;
-          let tl = List.map Variable_names.(name_of_type new_name) tyl in
+          let tl = List.map (fun ty ->
+            Variable_names.(name_of_type new_name) ty, None) tyl in
           let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
           (* Forget names when we leave scope *)
           Variable_names.remove_names tyl;
@@ -1151,6 +1163,10 @@ let rec tree_of_typexp mode ty =
     | Tpackage pack ->
         let pack = tree_of_package mode pack in
         Otyp_module pack
+    | Tunboxed_tuple tyl ->
+        Otyp_unboxed_tuple (tree_of_labeled_typlist mode tyl)
+    | Tquote _ | Tsplice _ | Trepr _ | Tof_kind _ ->
+        Otyp_stuff "<internal>"
   in
   Aliases.remove_delay px;
   alias_nongen_row mode px ty;
@@ -1269,19 +1285,20 @@ let filter_params tyl =
   in List.rev params
 
 let prepare_type_constructor_arguments = function
-  | Cstr_tuple l -> List.iter prepare_type l
+  | Cstr_tuple l -> List.iter (fun ca -> prepare_type ca.ca_type) l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
 
 let tree_of_label l =
   {
     olab_name = Ident.name l.ld_id;
-    olab_mut = l.ld_mutable;
-    olab_atomic = l.ld_atomic;
+    olab_mut = if Types.is_mutable l.ld_mutable then Mutable else Immutable;
+    olab_atomic = Nonatomic;
     olab_type = tree_of_typexp Type l.ld_type;
+    olab_modalities = [];
   }
 
 let tree_of_constructor_arguments = function
-  | Cstr_tuple l -> tree_of_typlist Type l
+  | Cstr_tuple l -> tree_of_typlist Type (List.map (fun ca -> ca.ca_type) l)
   | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
 
 let tree_of_single_constructor cd =
@@ -1290,8 +1307,8 @@ let tree_of_single_constructor cd =
   let args = tree_of_constructor_arguments cd.cd_args in
   {
       ocstr_name = name;
-      ocstr_args = args;
-      ocstr_return_type = ret;
+      ocstr_args = List.map (fun t -> (t, [])) args;
+      ocstr_return_type = Option.map (fun t -> ([], t)) ret;
   }
 
 (* When printing GADT constructor, we need to forget the naming decision we took
@@ -1315,8 +1332,10 @@ let prepare_decl id decl =
       let vars = free_variables ty in
       List.iter
         (fun ty ->
-          if get_desc ty = Tvar (Some "_") && List.exists (eq_type ty) vars
-          then set_type_desc ty (Tvar None))
+          match get_desc ty with
+          | Tvar { name = Some "_"; jkind } when List.exists (eq_type ty) vars ->
+            set_type_desc ty (Tvar { name = None; jkind })
+          | _ -> ())
         params
   | None -> ()
   end;
@@ -1343,13 +1362,13 @@ let prepare_decl id decl =
   in
   begin match decl.type_kind with
   | Type_abstract _ -> ()
-  | Type_variant (cstrs, _rep) ->
+  | Type_variant (cstrs, _rep, _umc) ->
       List.iter
         (fun c ->
            prepare_type_constructor_arguments c.cd_args;
            Option.iter prepare_type c.cd_res)
         cstrs
-  | Type_record(l, _rep) ->
+| Type_record(l, _rep, _umc) ->
       List.iter (fun l -> prepare_type l.ld_type) l
   | Type_open -> ()
   end;
@@ -1369,7 +1388,7 @@ let tree_of_type_decl id decl =
           decl.type_manifest = None || decl.type_private = Private
       | Type_record _ ->
           decl.type_private = Private
-      | Type_variant (tll, _rep) ->
+      | Type_variant (tll, _rep, _umc) ->
           decl.type_private = Private ||
           List.exists (fun cd -> cd.cd_res <> None) tll
       | Type_open ->
@@ -1417,12 +1436,12 @@ let tree_of_type_decl id decl =
         | Some ty ->
             tree_of_typexp Type ty, decl.type_private, false
         end
-    | Type_variant (cstrs, rep) ->
+    | Type_variant (cstrs, rep, _umc) ->
         tree_of_manifest
           (Otyp_sum (List.map tree_of_constructor_in_decl cstrs)),
         decl.type_private,
         (rep = Variant_unboxed)
-    | Type_record(lbls, rep) ->
+    | Type_record(lbls, rep, _umc) ->
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         decl.type_private,
         (match rep with Record_unboxed _ -> true | _ -> false)

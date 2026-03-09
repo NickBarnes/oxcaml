@@ -1512,9 +1512,9 @@ type modal =
     (** In other cases, the caller has already printed the modes (as the
         constructor argument) on the type. *)
 
-type typobject_repr = { fields : (string * type_expr) list; open_row : bool }
+type typobject_repr = Out_type.typobject_repr = { fields : (string * type_expr) list; open_row : bool }
 
-type typvariant_repr = {
+type typvariant_repr = Out_type.typvariant_repr = {
   fields : (string * bool * type_expr list) list;
   name : (Path.t * type_expr list) option;
   closed : bool;

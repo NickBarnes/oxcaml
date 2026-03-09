@@ -1110,7 +1110,8 @@ and class_structure cl_num virt self_scope final val_env met_env loc
     List.fold_right
       (fun {Typecore.pv_id; pv_type; pv_loc; pv_kind; pv_attributes} met_env ->
          add_self_met pv_loc pv_id sign self_var_kind vars
-           cl_num (pv_kind=As_var) pv_type pv_attributes met_env)
+           cl_num (pv_kind = Typecore.As_var)
+           pv_type pv_attributes met_env)
       self_pat_vars met_env
   in
   let fields =

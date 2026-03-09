@@ -105,3 +105,17 @@ module Doc : Printers with type 'a printer := 'a Format_doc.printer
 
 (** For compatibility with Format printers *)
 include Printers with type 'a printer := 'a Format_doc.format_printer
+
+(** {1 For [Translquote]} *)
+val tree_of_typobject_repr : type_expr -> Out_type.typobject_repr
+val tree_of_typvariant_repr : row_desc -> Out_type.typvariant_repr
+
+val rewrite_double_underscore_longidents :
+  Env.t -> Longident.t -> Longident.t
+
+val raw_type_expr : Format.formatter -> type_expr -> unit
+val raw_row_desc : Format.formatter -> row_desc -> unit
+val raw_field : Format.formatter -> row_field -> unit
+
+val expand_module_type :
+  (Env.t -> module_type -> module_type) ref

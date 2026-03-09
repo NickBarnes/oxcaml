@@ -18,7 +18,6 @@
 
 open Format
 open Types
-open Asttypes
 let longident = Pprintast.longident
 
 let raw_list pr ppf = function
@@ -77,10 +76,10 @@ and raw_lid_type_list tl =
              fprintf ppf "(@,%a,@,%a)" longident lid raw_type typ)
     tl
 and raw_type_desc ppf = function
-    Tvar name -> fprintf ppf "Tvar %a" print_name name
-  | Tarrow(l,t1,t2,c) ->
+    Tvar { name; _ } -> fprintf ppf "Tvar %a" print_name name
+  | Tarrow((l, _, _),t1,t2,c) ->
       fprintf ppf "@[<hov1>Tarrow(\"%s\",@,%a,@,%a,@,%s)@]"
-        (string_of_label l) raw_type t1 raw_type t2
+        (Printtyp.string_of_label l) raw_type t1 raw_type t2
         (if is_commu_ok c then "Cok" else "Cunknown")
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" labeled_type_list tl
@@ -103,7 +102,7 @@ and raw_type_desc ppf = function
   | Tsubst (t, None) -> fprintf ppf "@[<1>Tsubst@,(%a,None)@]" raw_type t
   | Tsubst (t, Some t') ->
       fprintf ppf "@[<1>Tsubst@,(%a,@ Some%a)@]" raw_type t raw_type t'
-  | Tunivar name -> fprintf ppf "Tunivar %a" print_name name
+  | Tunivar { name; _ } -> fprintf ppf "Tunivar %a" print_name name
   | Tpoly (t, tl) ->
       fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
         raw_type t
@@ -128,10 +127,17 @@ and raw_type_desc ppf = function
     fprintf ppf "@[<hov1>Tpackage(@,%a,@,%a)@]"
       path pack.pack_path
       raw_lid_type_list pack.pack_cstrs
+  | Tunboxed_tuple tl ->
+    fprintf ppf "@[<1>Tunboxed_tuple@,%a@]" labeled_type_list tl
+  | Tquote t -> fprintf ppf "@[<1>Tquote@,%a@]" raw_type t
+  | Tsplice t -> fprintf ppf "@[<1>Tsplice@,%a@]" raw_type t
+  | Trepr (t, _) -> fprintf ppf "@[<1>Trepr@,%a@]" raw_type t
+  | Tof_kind _ -> fprintf ppf "Tof_kind"
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
 | Some Types.Rigid -> fprintf ppf "Some Rigid"
+| Some Types.Fixed_existential -> fprintf ppf "Some Fixed_existential"
 | Some Types.Univar t -> fprintf ppf "Some(Univar(%a))" raw_type t
 | Some Types.Reified p -> fprintf ppf "Some(Reified(%a))" path p
 

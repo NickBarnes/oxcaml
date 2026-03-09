@@ -88,6 +88,7 @@ type error =
   | Method_mismatch of string * type_expr * type_expr
   | Opened_object of Path.t option
   | Not_an_object of type_expr
+  | Repeated_tuple_label of string
   | Unsupported_extension : _ Language_extension.t -> error
   | Polymorphic_optional_param
   | Non_value of
@@ -103,7 +104,6 @@ type error =
        usage_stage : Env.stage}
   | Mismatched_jkind_annotation of
     { name : string; explicit_jkind : jkind_lr; implicit_jkind : jkind_lr }
-  | Repeated_tuple_label of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

@@ -209,9 +209,6 @@ module Item = struct
     let name (name, _) = name
     let kind (_, kind) = kind
 
-    let name (name, _) = name
-    let kind (_, kind) = kind
-
     let make str ns = str, ns
 
     let value id = Ident.name id, Sig_component_kind.Value

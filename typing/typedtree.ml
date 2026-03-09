@@ -192,7 +192,7 @@ and 'k pattern_desc =
       (string option * value general_pattern * Jkind.sort) list ->
       value pattern_desc
   | Tpat_construct :
-      Longident.t loc * Types.constructor_description *
+      Longident.t loc * Data_types.constructor_description *
         value general_pattern list *
         ((Ident.t loc * Parsetree.jkind_annotation option) list * core_type)
           option ->
@@ -269,9 +269,9 @@ and expression_desc =
   | Texp_match of
       expression * Jkind.sort * computation case list * value case list *
         partial
-  | Texp_try of expression * value case list * value case list
   | Texp_unboxed_unit
   | Texp_unboxed_bool of bool
+  | Texp_try of expression * value case list * value case list
   | Texp_tuple of (string option * expression) list * alloc_mode
   | Texp_unboxed_tuple of (string option * expression * Jkind.sort) list
   | Texp_construct of
@@ -285,7 +285,7 @@ and expression_desc =
     }
   | Texp_record_unboxed_product of {
       fields :
-        ( Types.unboxed_label_description * record_label_definition ) array;
+        ( Data_types.unboxed_label_description * record_label_definition ) array;
       representation : Types.record_unboxed_product_representation;
       extended_expression : (expression * Jkind.sort) option;
     }
@@ -370,7 +370,7 @@ and meth =
   | Tmeth_ancestor of Ident.t * Path.t
 
 and block_access =
-  | Baccess_field of Longident.t loc * Types.label_description
+  | Baccess_field of Longident.t loc * Data_types.label_description
   | Baccess_array of {
       mut: mutable_flag;
       index_kind: index_kind;
@@ -382,7 +382,7 @@ and block_access =
   | Baccess_block of mutable_flag * expression
 
 and unboxed_access =
-  | Uaccess_unboxed_field of Longident.t loc * Types.unboxed_label_description
+  | Uaccess_unboxed_field of Longident.t loc * Data_types.unboxed_label_description
 
 and comprehension =
   {
@@ -1395,7 +1395,7 @@ let split_pattern pat =
    - Similar to an identifier: words separated by '.' or '#'.
    - Do not contain spaces when printed.
   *)
-let nominal_exp_doc lid t =
+let _nominal_exp_doc lid t =
   let open Format_doc.Doc in
   let longident l = Format_doc.doc_printer lid l.Location.txt in
   let rec nominal_exp_doc doc exp =

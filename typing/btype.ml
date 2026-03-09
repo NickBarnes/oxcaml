@@ -16,7 +16,6 @@
 (* Basic operations on core types *)
 
 open Asttypes
-open Data_types
 open Types
 
 open Local_store

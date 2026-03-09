@@ -183,10 +183,6 @@ let companion_cmi f =
   let prefix = Misc.chop_extensions f.Artifact.filename in
   { f with Artifact.filename = prefix ^ ".cmi"}
 
-let companion_cmi f =
-  let prefix = Misc.chop_extensions f.Artifact.filename in
-  { f with Artifact.filename = prefix ^ ".cmi"}
-
 let mli_from_artifact f = Artifact.prefix f ^ !Config.interface_suffix
 let mli_from_source u =
    let prefix = Filename.remove_extension (original_source_file u) in

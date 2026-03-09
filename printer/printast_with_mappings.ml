@@ -41,9 +41,9 @@ let fmt_location f loc =
 let rec fmt_longident_aux f x =
   match x with
   | Longident.Lident (s) -> fprintf f "%s" s;
-  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y s;
+  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y.txt s.txt;
   | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
+      fprintf f "%a(%a)" fmt_longident_aux y.txt fmt_longident_aux z.txt;
 ;;
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
@@ -251,9 +251,9 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly\n";
       list i typevar ppf sl;
       core_type i ppf ct;
-  | Ptyp_package (s, l) ->
-      line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
-      list i package_with ppf l;
+  | Ptyp_package { ppt_path; ppt_cstrs } ->
+      line i ppf "Ptyp_package %a\n" fmt_longident_loc ppt_path;
+      list i package_with ppf ppt_cstrs;
   | Ptyp_open (mod_ident, t) ->
       line i ppf "Ptyp_open \"%a\"\n" fmt_longident_loc mod_ident;
       core_type i ppf t
@@ -296,9 +296,9 @@ and pattern i ppf x =
   | Ppat_alias (p, s) ->
       line i ppf "Ppat_alias %a\n" fmt_string_loc s;
       pattern i ppf p;
-  | Ppat_constant (c) -> line i ppf "Ppat_constant %a\n" fmt_constant c;
+  | Ppat_constant (c) -> line i ppf "Ppat_constant %a\n" fmt_constant c.pconst_desc;
   | Ppat_interval (c1, c2) ->
-      line i ppf "Ppat_interval %a..%a\n" fmt_constant c1 fmt_constant c2;
+      line i ppf "Ppat_interval %a..%a\n" fmt_constant c1.pconst_desc fmt_constant c2.pconst_desc;
   | Ppat_unboxed_unit -> line i ppf "Ppat_unboxed_unit\n";
   | Ppat_unboxed_bool b -> line i ppf "Ppat_unboxed_bool %a\n" fmt_bool b;
   | Ppat_tuple (l, c) ->
@@ -353,6 +353,10 @@ and pattern i ppf x =
   | Ppat_open (m,p) ->
       line i ppf "Ppat_open \"%a\"\n" fmt_longident_loc m;
       pattern i ppf p
+  | Ppat_effect (p1, p2) ->
+      line i ppf "Ppat_effect\n";
+      pattern i ppf p1;
+      pattern i ppf p2
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -365,7 +369,7 @@ and expression i ppf x =
   let i = i+1 in
   match x.pexp_desc with
   | Pexp_ident (li) -> line i ppf "Pexp_ident %a\n" fmt_longident_loc li;
-  | Pexp_constant (c) -> line i ppf "Pexp_constant %a\n" fmt_constant c;
+  | Pexp_constant (c) -> line i ppf "Pexp_constant %a\n" fmt_constant c.pconst_desc;
   | Pexp_let (mf, rf, l, e) ->
       line i ppf "Pexp_let %a %a\n" fmt_mutable_flag mf fmt_rec_flag rf;
       list i value_binding ppf l;
@@ -493,7 +497,7 @@ and expression i ppf x =
       line i ppf "Pexp_newtype \"%s\"\n" s.txt;
       jkind_annotation_opt i ppf jkind;
       expression i ppf e
-  | Pexp_pack me ->
+  | Pexp_pack (me, _) ->
       line i ppf "Pexp_pack\n";
       module_expr i ppf me
   | Pexp_open (o, e) ->

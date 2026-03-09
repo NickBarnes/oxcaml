@@ -3813,7 +3813,7 @@ and lookup_apply ~errors ~use ~loc lid0 env =
   let f0_path, _, f0_comp =
     lookup_module_components ~errors ~use ~loc f0_lid env
   in
-  let check_one_apply ~errors ~loc ~f_lid ~f_comp ~arg_path ~arg_mty env =
+  let check_one_apply ~errors ~loc:_ ~f_lid ~f_comp ~arg_path ~arg_mty env =
     let { txt = f_lid; loc } = f_lid in
     let f_comp, param_mty =
       get_functor_components ~errors ~loc f_lid env f_comp

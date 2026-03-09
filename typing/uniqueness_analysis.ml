@@ -81,7 +81,7 @@
 *)
 
 open Asttypes
-open Types
+open Data_types
 open Mode
 open Typedtree
 module Uniqueness = Mode.Uniqueness
@@ -2413,11 +2413,11 @@ let rec check_uniqueness_exp_desc ~borrows ~overwrite (ienv : Ienv.t) ~loc :
         args
     in
     UF.pars (uf_fn :: uf_args)
-  | Texp_match (arg, _, cases, _) ->
+  | Texp_match (arg, _, cases, _, _) ->
     let value, uf_arg = check_uniqueness_exp_for_match ienv arg in
     let uf_cases = check_uniqueness_comp_cases ienv value cases in
     UF.seq uf_arg uf_cases
-  | Texp_try (body, cases) ->
+  | Texp_try (body, cases, _) ->
     let uf_body = check_uniqueness_exp ~overwrite:None ienv body in
     let value = Match_single (Paths.fresh ()) in
     let uf_cases = check_uniqueness_cases ienv value cases in

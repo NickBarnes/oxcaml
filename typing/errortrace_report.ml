@@ -175,6 +175,7 @@ let explain_fixed_row pos expl = match expl with
            print_path p ppf))
       p
   | Types.Rigid -> Format_doc.Doc.empty
+  | Types.Fixed_existential -> Format_doc.Doc.empty
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
   (* Common *)
@@ -198,8 +199,8 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
         doc_printf "@,@[%a,@ %a@]" pp_doc (explain_fixed_row pos e)
           pp_doc (explain_fixed_row_case k)
       )
-  | Errortrace.Fixed_row (_,_, Rigid) ->
-      (* this case never happens *)
+  | Errortrace.Fixed_row (_,_, (Rigid | Fixed_existential)) ->
+      (* these cases never happen *)
       None
   (* Equality & Moregen *)
   | Errortrace.Presence_not_guaranteed_for (pos, s) -> Some(
@@ -352,6 +353,37 @@ let explanation (type variety) intro prev env
     explain_object o
   | Errortrace.First_class_module fm ->
     explain_first_class_module fm
+  | Errortrace.Bad_jkind (t, e) ->
+    add_type_to_preparation t;
+    Some (doc_printf "@ @[<hov>%a@]"
+            (Jkind.Violation.report_with_offender
+               ~offender:(fun ppf -> prepared_type_expr ppf t)
+               ~level:(Ctype.get_current_level ())) e)
+  | Errortrace.Bad_jkind_sort (t, e) ->
+    add_type_to_preparation t;
+    Some (doc_printf "@ @[<hov>%a@]"
+            (Jkind.Violation.report_with_offender_sort
+               ~offender:(fun ppf -> prepared_type_expr ppf t)
+               ~level:(Ctype.get_current_level ())) e)
+  | Errortrace.Unequal_var_jkinds (t1, k1, t2, k2) ->
+    add_type_to_preparation t1;
+    add_type_to_preparation t2;
+    let fmt_history t k ppf =
+      Jkind.(format_history ~intro:(
+        Format_doc.dprintf "The layout of %a is %a"
+          prepared_type_expr t format k) ppf k)
+    in
+    Some (doc_printf "@ because the layouts of their variables are different.\
+                   @ @[<v>%t@;%t@]"
+            (fmt_history t1 k1) (fmt_history t2 k2))
+  | Errortrace.Unequal_tof_kind_jkinds (k1, k2) ->
+    let fmt_history which k ppf =
+      Jkind.(format_history ~intro:(
+        Format_doc.dprintf "The kind of %s is %a" which format k) ppf k)
+    in
+    Some (doc_printf "@ because their kinds are different.\
+                   @ @[<v>%t@;%t@]"
+            (fmt_history "the first" k1) (fmt_history "the second" k2))
   | Errortrace.Rec_occur(x,y) ->
     add_type_to_preparation x;
     add_type_to_preparation y;
