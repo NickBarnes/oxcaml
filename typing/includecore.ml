@@ -18,6 +18,7 @@
 open Asttypes
 open Path
 open Types
+open Data_types
 open Mode
 open Typedtree
 
@@ -54,10 +55,12 @@ type mmodes =
       ('l * Mode.allowed) Mode.Value.t ->
       mmodes
 
-let child_close_over_coercion_opt id c =
+let child_close_over_coercion_opt id (c : held_locks option) : held_locks option =
   match c with
   | None -> None
-  | Some (locks, lid, loc) -> Some (locks, Longident.Ldot (lid, id), loc)
+  | Some (locks, lid, loc) ->
+    let noloc x = Location.mknoloc x in
+    Some (locks, Longident.Ldot (noloc lid, noloc id), loc)
 
 let child_modes id = function
   | All -> All
@@ -143,23 +146,6 @@ let primitive_descriptions pd1 pd2 =
   else
     native_repr_args pd1.prim_native_repr_args pd2.prim_native_repr_args
 
-<<<<<<< oxcaml
-||||||| upstream-base
-type value_mismatch =
-  | Primitive_mismatch of primitive_mismatch
-  | Not_a_primitive
-  | Type of Errortrace.moregen_error
-
-exception Dont_match of value_mismatch
-
-=======
-type value_mismatch =
-  | Primitive_mismatch of primitive_mismatch
-  | Not_a_primitive
-  | Type of Errortrace.moregen_error
-
-exception Dont_match of value_mismatch
-
 (* A value description [vd1] is consistent with the value description [vd2] if
    there is a context E such that [E |- vd1 <: vd2] for the ordinary subtyping.
    For values, this is the case as soon as the kind of [vd1] is a subkind of the
@@ -174,13 +160,13 @@ let value_descriptions_consistency env vd1 vd2 =
   | (Val_prim p, _) ->
       let pc =
         { pc_desc = p; pc_type = vd2.Types.val_type;
+          pc_poly_mode = None; pc_poly_sort = None;
           pc_env = env; pc_loc = vd1.Types.val_loc; }
       in
       Tcoerce_primitive pc
   | (_, Val_prim _) -> raise (Dont_match Not_a_primitive)
   | (_, _) -> Tcoerce_none
 
->>>>>>> upstream-incoming
 let value_descriptions ~loc env name
     ~mmodes
     (vd1 : Types.value_description)
@@ -191,7 +177,6 @@ let value_descriptions ~loc env name
     loc
     vd1.val_attributes vd2.val_attributes
     name;
-<<<<<<< oxcaml
   begin match Zero_alloc.sub vd1.val_zero_alloc vd2.val_zero_alloc with
   | Ok () -> ()
   | Error e -> raise (Dont_match (Zero_alloc e))
@@ -256,30 +241,6 @@ let value_descriptions ~loc env name
          | Val_prim _ -> raise (Dont_match Not_a_primitive)
          | _ -> Tcoerce_none
      end
-||||||| upstream-base
-  match Ctype.moregeneral env true vd1.val_type vd2.val_type with
-  | exception Ctype.Moregen err -> raise (Dont_match (Type err))
-  | () -> begin
-      match (vd1.val_kind, vd2.val_kind) with
-      | (Val_prim p1, Val_prim p2) -> begin
-          match primitive_descriptions p1 p2 with
-          | None -> Tcoerce_none
-          | Some err -> raise (Dont_match (Primitive_mismatch err))
-        end
-      | (Val_prim p, _) ->
-          let pc =
-            { pc_desc = p; pc_type = vd2.Types.val_type;
-              pc_env = env; pc_loc = vd1.Types.val_loc; }
-          in
-          Tcoerce_primitive pc
-      | (_, Val_prim _) -> raise (Dont_match Not_a_primitive)
-      | (_, _) -> Tcoerce_none
-    end
-=======
-  match Ctype.moregeneral env true vd1.val_type vd2.val_type with
-  | exception Ctype.Moregen err -> raise (Dont_match (Type err))
-  | () -> value_descriptions_consistency env vd1 vd2
->>>>>>> upstream-incoming
 
 (* Inclusion between manifest types (particularly for private row types) *)
 
@@ -337,11 +298,7 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
   | Atomicity of position
-<<<<<<< oxcaml
   | Modality of Modality.equate_error
-||||||| upstream-base
-=======
->>>>>>> upstream-incoming
 
 type record_change =
   (Types.label_declaration, Types.label_declaration, label_mismatch)
@@ -407,6 +364,10 @@ type type_mismatch =
   | Jkind of Jkind.Violation.t
   | Unsafe_mode_crossing of unsafe_mode_crossing_mismatch
 
+module Style = Misc.Style
+module Fmt = Format_doc
+module Printtyp = Printtyp.Doc
+
 let report_modality_sub_error first second ppf e =
   let Modality.Error (ax, {left; right}) = e in
   let print_modality id ppf m =
@@ -439,14 +400,6 @@ let report_modality_equate_error first second ppf
   match equate_step with
   | Left_le_right -> report_modality_sub_error first second ppf sub_error
   | Right_le_left -> report_modality_sub_error second first ppf sub_error
-
-module Style = Misc.Style
-module Fmt = Format_doc
-<<<<<<< oxcaml
-||||||| upstream-base
-=======
-module Printtyp = Printtyp.Doc
->>>>>>> upstream-incoming
 
 let report_primitive_mismatch first second ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
@@ -487,8 +440,7 @@ let report_value_mismatch first second env ppf err =
       pr "The implementation is not a primitive."
   | Type trace ->
       let msg = Fmt.Doc.msg in
-<<<<<<< oxcaml
-      Printtyp.report_moregen_error ppf Type_scheme env trace
+      Errortrace_report.moregen ppf Type_scheme env trace
         (msg "The type")
         (msg "is not compatible with the type")
   | Zero_alloc e -> Zero_alloc.print_error ppf e
@@ -497,27 +449,10 @@ let report_value_mismatch first second env ppf err =
       let got = first ^ " is" in
       let expected = second ^ " is" in
       report_mode_sub_error got expected ppf e
-||||||| upstream-base
-      Printtyp.report_moregen_error ppf Type_scheme env trace
-        (fun ppf -> Format.fprintf ppf "The type")
-        (fun ppf -> Format.fprintf ppf "is not compatible with the type")
-=======
-      Errortrace_report.moregen ppf Type_scheme env trace
-        (msg "The type")
-        (msg "is not compatible with the type")
->>>>>>> upstream-incoming
 
 let report_type_inequality env ppf err =
   let msg = Fmt.Doc.msg in
-<<<<<<< oxcaml
-  Printtyp.report_equality_error ppf Type_scheme env err
-||||||| upstream-base
-  Printtyp.report_equality_error ppf Type_scheme env err
-    (fun ppf -> Format.fprintf ppf "The type")
-    (fun ppf -> Format.fprintf ppf "is not equal to the type")
-=======
   Errortrace_report.equality ppf Type_scheme env err
->>>>>>> upstream-incoming
     (msg "The type")
     (msg "is not equal to the type")
 
@@ -540,15 +475,6 @@ let report_label_mismatch first second env ppf err =
       report_type_inequality env ppf err
   | Mutability ord ->
       Format_doc.fprintf ppf "%s is mutable and %s is not."
-<<<<<<< oxcaml
-||||||| upstream-base
-      Format.fprintf ppf "%s is mutable and %s is not."
-=======
-        (String.capitalize_ascii (choose ord first second))
-        (choose_other ord first second)
-  | Atomicity ord ->
-      Format_doc.fprintf ppf "%s is atomic and %s is not."
->>>>>>> upstream-incoming
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
   | Atomicity ord ->
@@ -765,13 +691,6 @@ let report_unsafe_mode_crossing_mismatch first second ppf e =
 
 let report_type_mismatch first second decl env ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
-<<<<<<< oxcaml
-  pr "@ ";
-||||||| upstream-base
-  let pr fmt = Format.fprintf ppf fmt in
-  pr "@ ";
-=======
->>>>>>> upstream-incoming
   match err with
   | Arity ->
       pr "They have different arities."
@@ -845,7 +764,6 @@ let compare_unsafe_mode_crossing ~env umc1 umc2 =
 module Record_diffing = struct
 
   let compare_labels env params1 params2
-<<<<<<< oxcaml
         (ld1 : Types.label_declaration)
         (ld2 : Types.label_declaration) =
         let err =
@@ -882,43 +800,6 @@ module Record_diffing = struct
             end
           | Error e -> Some (Modality e : label_mismatch)
         end
-||||||| upstream-base
-      (ld1 : Types.label_declaration)
-      (ld2 : Types.label_declaration) =
-    if ld1.ld_mutable <> ld2.ld_mutable
-    then
-      let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
-      Some (Mutability  ord)
-    else
-    let tl1 = params1 @ [ld1.ld_type] in
-    let tl2 = params2 @ [ld2.ld_type] in
-    match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality err ->
-        Some (Type err : label_mismatch)
-    | () -> None
-=======
-      (ld1 : Types.label_declaration)
-      (ld2 : Types.label_declaration) =
-    if ld1.ld_mutable <> ld2.ld_mutable
-    then
-      let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
-      Some (Mutability  ord)
-    else if ld1.ld_atomic <> ld2.ld_atomic
-    then
-      let ord =
-        match ld1.ld_atomic with
-        | Atomic -> First
-        | Nonatomic -> Second
-      in
-      Some (Atomicity  ord)
-    else
-    let tl1 = params1 @ [ld1.ld_type] in
-    let tl2 = params2 @ [ld2.ld_type] in
-    match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality err ->
-        Some (Type err : label_mismatch)
-    | () -> None
->>>>>>> upstream-incoming
 
   let rec equal ~loc env params1 params2
       (labels1 : Types.label_declaration list)
@@ -1441,7 +1322,6 @@ let type_manifest env ty1 ty2 priv2 kind2 =
       | () -> None
     end
 
-<<<<<<< oxcaml
 (* Note [Contravariance of type parameter jkinds]
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1528,8 +1408,7 @@ let type_manifest env ty1 ty2 priv2 kind2 =
    *)
 
 (* See Note [Contravariance of type parameter jkinds]. *)
-||||||| upstream-base
-=======
+
 (* A type declarations [td1] is consistent with the type declaration [td2] if
    there is a context E such E |- td1 <: td2 for the ordinary subtyping. For
    types, this is the case as soon as the two type declarations share the same
@@ -1541,7 +1420,6 @@ let type_declarations_consistency env decl1 decl2 =
     | Some err -> Some (Privacy err)
     | None -> None
 
->>>>>>> upstream-incoming
 let type_declarations ?(equality = false) ~loc env ~mark name
       decl1 path decl2 =
   Builtin_attributes.check_alerts_inclusion
@@ -1550,7 +1428,6 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     loc
     decl1.type_attributes decl2.type_attributes
     name;
-<<<<<<< oxcaml
   if decl1.type_arity <> decl2.type_arity then Some Arity else
   (* Step 1 from the Note *)
   let err =
@@ -1581,7 +1458,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
                     "Unification in type_declarations failed, \
                      but not with Bad_jkind:@;<1 2>%t"
                     (fun ppf ->
-                       Printtyp.report_unification_error ppf env err
+                       Errortrace_report.unification ppf env err
                          (Fmt.doc_printf "The type")
                          (Fmt.doc_printf "does not unify with the type"))
         end
@@ -1594,16 +1471,6 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | Some err -> Some (Privacy err)
     | None -> None
   in
-||||||| upstream-base
-  if decl1.type_arity <> decl2.type_arity then Some Arity else
-  let err =
-    match privacy_mismatch env decl1 decl2 with
-    | Some err -> Some (Privacy err)
-    | None -> None
-  in
-=======
-  let err = type_declarations_consistency env decl1 decl2 in
->>>>>>> upstream-incoming
   if err <> None then err else
   let err = match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) -> None
@@ -1666,7 +1533,6 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage cstrs1;
           if equality then mark Env.Exported cstrs2
         end;
-<<<<<<< oxcaml
         Misc.Stdlib.Option.first_some
           (Variant_diffing.compare_with_representation ~loc env
               decl1.type_params
@@ -1688,57 +1554,6 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           (mark_and_compare_records Unboxed_product labels1 rep1 labels2 rep2)
           (fun () -> compare_unsafe_mode_crossing ~env umc1 umc2)
       end
-||||||| upstream-base
-        Variant_diffing.compare_with_representation ~loc env
-          decl1.type_params
-          decl2.type_params
-          cstrs1
-          cstrs2
-          rep1
-          rep2
-    | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        if mark then begin
-          let mark usage lbls =
-            List.iter (Env.mark_label_used usage) lbls
-          in
-          let usage : Env.label_usage =
-            if decl2.type_private = Public then Env.Exported
-            else Env.Exported_private
-          in
-          mark usage labels1;
-          if equality then mark Env.Exported labels2
-        end;
-        Record_diffing.compare_with_representation ~loc env
-          decl1.type_params decl2.type_params
-          labels1 labels2
-          rep1 rep2
-=======
-        Variant_diffing.compare_with_representation ~loc env
-          decl1.type_params
-          decl2.type_params
-          cstrs1
-          cstrs2
-          rep1
-          rep2
-    | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        if mark then begin
-          let mark usage lbls =
-            List.iter (fun lbl ->
-              Env.mark_label_used usage lbl.Types.ld_uid
-            ) lbls
-          in
-          let usage : Env.label_usage =
-            if decl2.type_private = Public then Env.Exported
-            else Env.Exported_private
-          in
-          mark usage labels1;
-          if equality then mark Env.Exported labels2
-        end;
-        Record_diffing.compare_with_representation ~loc env
-          decl1.type_params decl2.type_params
-          labels1 labels2
-          rep1 rep2
->>>>>>> upstream-incoming
     | (Type_open, Type_open) -> None
     | (_, _) -> Some (Kind (of_kind decl1.type_kind, of_kind decl2.type_kind))
   in
@@ -1761,48 +1576,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
                                      []))))
   | All_good ->
   let abstr = Btype.type_kind_is_abstract decl2 && decl2.type_manifest = None in
-<<<<<<< oxcaml
-||||||| upstream-base
-  (* If attempt to assign a non-immediate type (e.g. string) to a type that
-   * must be immediate, then we error *)
-  let err =
-    if not abstr then
-      None
-    else
-      match
-        Type_immediacy.coerce decl1.type_immediate ~as_:decl2.type_immediate
-      with
-      | Ok () -> None
-      | Error violation -> Some (Immediate violation)
-  in
-  if err <> None then err else
-=======
-  (* If attempt to assign a non-immediate type (e.g. string) to a type that
-   * must be immediate, then we error *)
-  let err =
-    if not abstr then
-      None
-    else
-      match
-        Type_immediacy.coerce decl1.type_immediate ~as_:decl2.type_immediate
-      with
-      | Ok () -> None
-      | Error violation -> Some (Immediate violation)
-  in
-  if err <> None then err else
-  (* We need to check coherence of internal and exported variance  either
-     * when the export type is abstract, as there is no manifest to get
-       the minimal variance from
-     * when the export type is private, as the private manifest may be
-       result of expansions within Ctype.equal_private, forgetting
-       an explicit variance annotation in the internal type
-     * when the internal type is private, but this is already included
-       in the above two cases (a private type can only be exported as
-       abstract or private)
-     * when the internal type is open, as we do not allow changing the
-       variance in that case  *)
   let abstr' = abstr || decl2.type_private = Private in
->>>>>>> upstream-incoming
   let need_variance =
     abstr' || decl1.type_private = Private || decl1.type_kind = Type_open in
   if not need_variance then None else
