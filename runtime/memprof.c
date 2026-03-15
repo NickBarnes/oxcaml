@@ -2166,7 +2166,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   /* Unsuspend profiling. Resets trigger. */
   update_suspended(domain, false);
 
-  (void) caml_get_value_or_raise_async(res);
+  (void) caml_get_value_or_raise_async(res, "memprof callback");
 
   CAMLreturn0;
 }
@@ -2340,7 +2340,7 @@ CAMLprim value caml_memprof_stop(value unit)
     update_suspended(domain, true);
     caml_result res = entries_run_callbacks_res(thread, &thread->entries);
     update_suspended(domain, false);
-    (void) caml_raise_async_if_exception(res, "memprof callback");
+    (void) caml_get_value_or_raise_async(res, "memprof callback");
   }
 
   value config = thread_config(thread);

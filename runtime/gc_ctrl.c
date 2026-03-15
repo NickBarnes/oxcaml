@@ -219,8 +219,9 @@ CAMLprim value caml_gc_set(value v)
     CAML_GC_MESSAGE(PARAMS,
                     "New space overhead: %" ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                     newpf);
+  }
   if (newpm != atomic_load_relaxed(&caml_max_percent_free)) {
-    atomic_store_relaxed(&caml_max_percent_free, newpm;)
+    atomic_store_relaxed(&caml_max_percent_free, newpm);
     CAML_GC_MESSAGE(PARAMS, "New max space overhead: %"
                     ARCH_INTNAT_PRINTF_FORMAT "u%%\n", newpm);
   }
@@ -281,7 +282,7 @@ CAMLprim value caml_gc_minor(value v)
   caml_minor_collection ();
   caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MINOR);
-  return caml_raise_async_if_exception(result, "");
+  return caml_get_value_or_raise_async(result, "Gc.minor");
 }
 
 static caml_result gc_major_res(int compaction_mode)
@@ -300,26 +301,25 @@ CAMLprim value caml_gc_major(value v)
 {
   Caml_check_caml_state();
   CAMLassert (v == Val_unit);
-  return caml_raise_async_if_exception(gc_major_res(Compaction_auto), "");
+  return caml_get_value_or_raise_async(gc_major_res(Compaction_auto),
+                                       "Gc.minor");
 }
 
 static caml_result gc_full_major_res(void)
 {
+  int i;
   caml_result res;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
   CAML_GC_MESSAGE(MAJOR, "Full Major GC requested\n");
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
-  for (int i = 0; i < 3; i++) {
+  for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2 ? Compaction_auto : Compaction_none);
     caml_reset_major_pacing();
     res = caml_process_pending_actions_res();
-    if (caml_result_is_exception(res)) {
-      break;
+    if (caml_result_is_exception(res)) break;
   }
-  if (i == 3) {
-    ++ Caml_state->stat_forced_major_collections;
-  }
+  ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
   return res;
 }
@@ -328,7 +328,7 @@ CAMLprim value caml_gc_full_major(value v)
 {
   Caml_check_caml_state();
   CAMLassert (v == Val_unit);
-  return caml_raise_async_if_exception(gc_full_major_res(), "");
+  return caml_get_value_or_raise_async(gc_full_major_res(), "Gc.full_major");
 }
 
 CAMLprim value caml_gc_major_slice (value v)
@@ -338,7 +338,7 @@ CAMLprim value caml_gc_major_slice (value v)
   caml_major_collection_slice(Long_val(v));
   caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR_SLICE);
-  return caml_raise_async_if_exception(result, "");
+  return caml_get_value_or_raise_async(result, "Gc.major_slice");
 }
 
 CAMLprim value caml_gc_compaction(value v)
@@ -346,29 +346,20 @@ CAMLprim value caml_gc_compaction(value v)
   Caml_check_caml_state();
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  value res = Result_unit;
+  caml_result res = Result_unit;
+  int i;
   /* We do a full major before this compaction. See [caml_full_major_exn] for
      why this needs three iterations. */
-  for (int i = 0; i < 3; i++) {
+  for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2 ? Compaction_forced : Compaction_none);
     caml_reset_major_pacing();
     res = caml_process_pending_actions_res();
     if (caml_result_is_exception(res))
       break;
-  caml_result result = Result_unit;
-  /* We do a full major before this compaction. See [caml_full_major_res] for
-     why this needs three iterations. */
-  for (int i = 0; i < 3; i++) {
-    caml_finish_major_cycle(i == 2);
-    caml_reset_major_pacing();
-    result = caml_process_pending_actions_res();
-    if (caml_result_is_exception(result)) break;
   }
-  if (i == 3) {
-    ++ Caml_state->stat_forced_major_collections;
-  }
+  ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
-  return caml_raise_async_if_exception(result, "");
+  return caml_get_value_or_raise_async(res, "Gc.compact");
 }
 
 CAMLprim value caml_gc_stat(value v)
@@ -380,7 +371,7 @@ CAMLprim value caml_gc_stat(value v)
   result = Result_value(caml_gc_quick_stat(Val_unit));
  out:
   CAML_EV_END(EV_EXPLICIT_GC_STAT);
-  return caml_raise_async_if_exception(result, "");
+  return caml_get_value_or_raise_async(result, "Gc.stat");
 }
 
 CAMLprim value caml_get_minor_free (value v)
@@ -626,7 +617,7 @@ CAMLprim value caml_runtime_parameters (value unit)
     free(tweaks);
   }
   return res;
-
+}
 /* Ramp-up phase. */
 
 static uintnat get_ramp_up_suspended_words(void) {

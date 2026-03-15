@@ -261,10 +261,10 @@ static void scan_native_globals(scanning_action f, void* fdata)
 
   /* Dynamic (natdynlink) global roots */
   caml_plat_lock_blocking(&roots_mutex);
+  int start, stop;
   FOREACH_SKIPLIST_ELEMENT(e, &caml_dyn_globals, {
     for(value *glob = (value *) (e->key); *glob != 0; glob++) {
       value glob_block = *glob;
-      int start, stop;
       compute_index_for_global_root_scan(&glob_block, &start, &stop);
       for (int j = start; j < stop; j++) {
         f(fdata, Field(glob_block, j), &Field(glob_block, j));

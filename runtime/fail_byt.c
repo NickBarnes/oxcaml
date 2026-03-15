@@ -165,7 +165,7 @@ CAMLexport value caml_exception_array_bound_error(void)
 
 CAMLexport value caml_exception_array_align_error(void)
 {
-  return caml_invalid_argument("address was misaligned");
+  return caml_exception_invalid_argument("address was misaligned");
 }
 
 CAMLexport value caml_exception_out_of_memory(void)

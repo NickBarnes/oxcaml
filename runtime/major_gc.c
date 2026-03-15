@@ -1,4 +1,4 @@
-**************************************************************************/
+/**************************************************************************/
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
@@ -323,9 +323,9 @@ static void ephe_next_round (void)
 {
   caml_plat_lock_blocking(&ephe_lock);
 
-  (void)caml_atomic_counter_incr(&ephe_cycle_info.round);
+  (void)caml_atomic_counter_incr(&ephe_round_info.round);
   CAMLassert(caml_atomic_counter_value(&ephe_round_info.num_domains_done) <=
-             caml-atomic_counter_value(&ephe_round_info.num_domains_todo));
+             caml_atomic_counter_value(&ephe_round_info.num_domains_todo));
   (void)caml_atomic_counter_init(&ephe_round_info.num_domains_done, 0);
 
   caml_plat_unlock(&ephe_lock);
@@ -346,7 +346,7 @@ static void ephe_todo_list_emptied (void)
    * whether the domain has already incremented
    * [ephe_round_info.num_domains_done] counter. */
   caml_atomic_counter_init(&ephe_round_info.num_domains_done, 0);
-  (void)caml_atomic_counter_incr(&ephe_round_info.ephe_cycle);
+  (void)caml_atomic_counter_incr(&ephe_round_info.round);
 
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
@@ -438,7 +438,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
     next = Ephe_link(ephe);
     CAMLassert (Tag_val(ephe) == Abstract_tag);
     header_t hd = Hd_val(ephe);
-    bool preseve_data = true;
+    bool preserve_data = true;
 
     /* TODO: move to the 'live' list if the data value is already
      * marked? */
@@ -447,7 +447,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
       caml_darken (domain_state, ephe, 0);
 
     /* If ephemeron is unmarked, data is dead */
-    if (is_unmarked(ephe)) preseve_data = false;
+    if (is_unmarked(ephe)) preserve_data = false;
 
     mlsize_t i, size = Wosize_hd(hd);
     for (i = CAML_EPHE_FIRST_KEY; i < size; i++) {
@@ -456,7 +456,7 @@ static intnat ephe_mark (intnat budget, uintnat round,
     ephemeron_again:
       if (key != caml_ephe_none && Is_block(key)) {
         if (Tag_val(key) == Forward_tag) {
-          f = Forward_val(key);
+          value f = Forward_val(key);
           if (Is_block(f)) {
             if (Tag_val(f) == Forward_tag || Tag_val(f) == Lazy_tag ||
                 Tag_val(f) == Forcing_tag || Tag_val(f) == Double_tag) {
@@ -1676,7 +1676,7 @@ static intnat mark(intnat budget) {
           }
         }
       } else {
-        ephe_next_cycle ();
+        ephe_next_round ();
         domain_state->marking_done = 1;
         (void)caml_atomic_counter_decr(&num_domains_to_mark);
       }
@@ -1966,7 +1966,7 @@ static void cycle_major_heap_from_stw_single(
   atomic_store(&caml_gc_mark_phase_requested, 0);
   caml_atomic_counter_init(&ephe_round_info.num_domains_todo,
                            num_domains_in_stw);
-  caml_atomic_counter_init(&ephe_round_info.ephe_cycle, 1);
+  caml_atomic_counter_init(&ephe_round_info.round, 1);
   caml_atomic_counter_init(&ephe_round_info.num_domains_done, 0);
 
   caml_atomic_counter_init(&num_domains_to_ephe_sweep, 0);
@@ -2192,7 +2192,7 @@ static void major_collection_slice(intnat howmuch,
   caml_domain_state* domain_state = Caml_state;
   uintnat sweep_work=0, mark_work=0, ephe_sweep_work=0, ephe_mark_work=0;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
-  uintnat saved_ephe_cycle;
+  uintnat saved_ephe_round;
   uintnat saved_major_cycle = caml_major_cycles_completed;
   intnat budget;
 
@@ -2316,17 +2316,17 @@ mark_again:
     if (caml_gc_phase != Phase_sweep_ephe) {
       /* Ephemeron Marking
          This work is accounted as marking work */
-      saved_ephe_cycle = caml_atomic_counter_value(&ephe_round_info.ephe_cycle);
+      saved_ephe_round = caml_atomic_counter_value(&ephe_round_info.round);
       if (domain_state->ephe_info->todo != (value) NULL &&
-          saved_ephe_cycle > domain_state->ephe_info->round &&
+          saved_ephe_round > domain_state->ephe_info->round &&
           get_major_slice_markwork(mode) > 0) {
         CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
 
         int ephe_completed_marking = 0;
         while (domain_state->ephe_info->todo != (value) NULL &&
-               saved_ephe_cycle > domain_state->ephe_info->round &&
+               saved_ephe_round > domain_state->ephe_info->round &&
                (budget = get_major_slice_markwork(mode)) > 0) {
-          intnat left = ephe_mark(budget, saved_ephe_cycle, EPHE_MARK_DEFAULT);
+          intnat left = ephe_mark(budget, saved_ephe_round, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
           /* caml_darken is called by ephe_mark, so count the work it does */
           work_done += mark_work_done_between_slices();
@@ -2350,7 +2350,7 @@ mark_again:
           if (!domain_state->marking_done)
             goto mark_again;
           else
-            record_ephe_marking_done(saved_ephe_cycle);
+            record_ephe_marking_done(saved_ephe_round);
         }
       }
     }

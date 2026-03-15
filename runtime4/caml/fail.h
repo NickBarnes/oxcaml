@@ -71,7 +71,7 @@ struct longjmp_buffer {
 
 int caml_is_special_exception(value exn);
 
-CAMLextern void caml_raise_async_if_exception(value res, const char* where);
+CAMLextern void caml_raise_async_if_exception(caml_result res, const char* where);
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_async(value res)

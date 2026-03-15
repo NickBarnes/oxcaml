@@ -89,7 +89,7 @@ struct caml_ba_array {
 #else
   intnat dim[1] /*[num_dims]*/; /* Size in each dimension */
 #endif
-n};
+};
 
 /* Size of struct caml_ba_array, in bytes, without dummy first dimension */
 #if (__STDC_VERSION__ >= 199901L)

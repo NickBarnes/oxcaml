@@ -70,21 +70,21 @@ static int check_for_pending_signals(void)
 
 /* Execute all pending signals */
 
-CAMLexport value caml_process_pending_signals_exn(void)
+CAMLexport caml_result caml_process_pending_signals_res(void)
 {
-  int i;
+  int signo;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
 
   if(!signals_are_pending)
-    return Val_unit;
+    return Result_unit;
   signals_are_pending = 0;
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
   if (!check_for_pending_signals())
-    return Val_unit;
+    return Result_unit;
 
 #ifdef POSIX_SIGNALS
   caml_sigmask_hook(/* dummy */ SIG_BLOCK, NULL, &set);
@@ -98,7 +98,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
 #endif
     caml_pending_signals[i] = 0;
     {
-      value exn = caml_execute_signal_exn(i, 0);
+      caml_result exn = caml_execute_signal_res(i, 0);
       if (Is_exception_result(exn)) return exn;
     }
   }
@@ -198,32 +198,29 @@ CAMLexport void caml_leave_blocking_section(void)
   errno = saved_errno;
 }
 
-static void check_async_exn(value res, const char *msg)
+static void check_async_res(caml_result res, const char *msg)
 {
-  value exn;
-  const value *break_exn;
-
-  if (!Is_exception_result(res))
+  if (!caml_result_is_exception(res))
     return;
 
-  exn = Extract_exception(res);
+  value exn = res.data;
 
   /* [Break] is not introduced as a predefined exception (in predef.ml and
      stdlib.ml) since it causes trouble in conjunction with warnings about
      constructor shadowing e.g. in format.ml.
      "Sys.Break" must match stdlib/sys.mlp. */
-  break_exn = caml_named_value("Sys.Break");
+  const value *break_exn = caml_named_value("Sys.Break");
   if (break_exn != NULL && exn == *break_exn)
     return;
 
   caml_fatal_uncaught_exception_with_message(exn, msg);
 }
 
-void caml_raise_async_if_exception(value res, const char* where)
+void caml_raise_async_if_exception(caml_result res, const char* where)
 {
-  if (Is_exception_result(res)) {
-    check_async_exn(res, where);
-    caml_raise_async(Extract_exception(res));
+  if (caml_result_is_exception(res)) {
+    check_async_res(res, where);
+    caml_raise_async(res.data);
   }
 }
 
@@ -231,9 +228,9 @@ void caml_raise_async_if_exception(value res, const char* where)
 
 static value caml_signal_handlers = 0;
 
-value caml_execute_signal_exn(int signal_number, int in_signal_handler)
+value caml_execute_signal_res(int signal_number, int in_signal_handler)
 {
-  value res;
+  caml_result res;
   value handler;
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
@@ -244,14 +241,14 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
   caml_sigmask_hook(SIG_BLOCK, &nsigs, &sigs);
 #endif
   handler = Field(caml_signal_handlers, signal_number);
-    res = caml_callback_exn(
+    res = caml_callback_res(
              handler,
              Val_int(caml_rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
     caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
-  } else if (Is_exception_result(res)) {
+  } else if (caml_result_is_exception(res)) {
     /* Restore the original signal mask and unblock the signal itself */
     sigdelset(&sigs, signal_number);
     caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
@@ -290,10 +287,8 @@ void caml_request_minor_gc (void)
   caml_set_action_pending();
 }
 
-value caml_do_pending_actions_exn(void)
+caml_result caml_do_pending_actions_res(void)
 {
-  value exn;
-
   caml_something_to_do = 0;
 
   // Do any pending minor collection or major slice
@@ -302,7 +297,7 @@ value caml_do_pending_actions_exn(void)
   caml_update_young_limit();
 
   // Call signal handlers first
-  exn = caml_process_pending_signals_exn();
+  caml_result res = caml_process_pending_signals_res();
   check_async_exn(exn, "signal handler");
   if (Is_exception_result(exn)) goto exception;
 

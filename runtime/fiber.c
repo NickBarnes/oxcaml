@@ -577,7 +577,7 @@ Caml_inline void scan_stack_frames(
   value * regs;
   frame_descr * d;
   value *root;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs *fds = caml_get_frame_descrs();
   /* does not change during marking */
   struct global_heap_state colors = caml_global_heap_state;
 
@@ -873,6 +873,55 @@ int caml_try_realloc_stack(asize_t required_space)
   wsize = Stack_high(old_stack) - Stack_base(old_stack);
   uintnat max_stack_wsize = caml_max_stack_wsize;
   wsize = wsize & (~1); // zero alignment bit
+  do {
+    if (wsize >= max_stack_wsize) return 0;
+    wsize *= 2;
+  } while (wsize < stack_used + required_space);
+
+  if (wsize > 4096 / sizeof(value)) {
+    CAML_GC_MESSAGE(STACKS,
+                    "Growing stack to %"
+                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
+                    Bsize_wsize(wsize) / 1024);
+  } else {
+    CAML_GC_MESSAGE(STACKS,
+                    "Growing stack to %"
+                    ARCH_INTNAT_PRINTF_FORMAT "u bytes\n",
+                    Bsize_wsize(wsize) * sizeof(value));
+  }
+
+  new_stack = caml_alloc_stack_noexc(wsize,
+                                     Stack_handle_value(old_stack),
+                                     Stack_handle_exception(old_stack),
+                                     Stack_handle_effect(old_stack),
+                                     old_stack->dyn,
+                                     old_stack->val,
+                                     old_stack->id);
+
+  if (!new_stack) return 0;
+  memcpy(Stack_high(new_stack) - stack_used,
+         Stack_high(old_stack) - stack_used,
+         stack_used * sizeof(value));
+  new_stack->sp = Stack_high(new_stack) - stack_used;
+  Stack_parent(new_stack) = Stack_parent(old_stack);
+
+  new_stack->local_arenas = caml_refresh_locals(old_stack);
+  new_stack->local_sp = old_stack->local_sp;
+  new_stack->local_top = old_stack->local_top;
+  new_stack->local_limit = old_stack->local_limit;
+
+  // Detach locals stack from old_stack so it will not be freed
+  old_stack->local_arenas = NULL;
+  old_stack->local_sp = 0;
+  old_stack->local_top = NULL;
+  old_stack->local_limit = 0;
+
+#ifdef NATIVE_CODE
+  /* There's no need to do another pass rewriting from
+     Caml_state->async_exn_handler because every asynchronous exception trap
+     frame is also a normal exception trap frame.  However
+     Caml_state->async_exn_handler itself must be updated. */
+  caml_rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler,
                                (value**) &Caml_state->async_exn_handler,
                                new_stack);
 #endif

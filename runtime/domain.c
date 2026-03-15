@@ -350,6 +350,11 @@ int caml_incoming_interrupts_queued(void)
 
 static void terminate_backup_thread(dom_internal *di);
 
+static inline bool backup_thread_running(dom_internal *di)
+{
+    return (atomic_load_acquire(&di->backup_thread_msg) != BT_INIT);
+}
+
 static void stw_handler(caml_domain_state* domain);
 static int handle_incoming(dom_internal *d)
 {
@@ -1044,7 +1049,6 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
     caml_plat_mutex_init(&dom->default_domain_lock);
     caml_plat_mutex_init(&dom->backup_thread_lock);
     caml_plat_cond_init(&dom->backup_thread_cond);
-    dom->backup_thread_running = 0;
     dom->backup_thread_msg = BT_INIT;
     dom->domain_canceled = false;
   }
@@ -1159,7 +1163,7 @@ static void install_backup_thread (dom_internal* di)
 #endif
 
   CAMLassert(di == domain_self);
-  if (di->backup_thread_running == 0) {
+  if (!backup_thread_running(di)) {
     uintnat msg;
     msg = atomic_load_acquire(&di->backup_thread_msg);
     CAMLassert (msg == BT_INIT || /* Using fresh domain */
@@ -1172,6 +1176,7 @@ static void install_backup_thread (dom_internal* di)
       caml_domain_lock_hook();
       msg = atomic_load_acquire(&di->backup_thread_msg);
     }
+  }
 
 #ifndef _WIN32
   /* No signals on the backup thread */
@@ -1189,7 +1194,6 @@ static void install_backup_thread (dom_internal* di)
 
   pthread_detach(di->backup_thread);
 }
-
 
 static void terminate_backup_thread(dom_internal *di)
 {
@@ -2057,8 +2061,8 @@ CAMLexport int caml_bt_is_self(void)
 
 CAMLexport intnat caml_domain_is_multicore (void)
 {
-  return (!caml_domain_alone()
-          || backup_thread_running(domain_self));
+  return (!caml_domain_alone() ||
+          backup_thread_running(domain_self));
 }
 
 CAMLexport void caml_acquire_domain_lock(void)
@@ -2216,8 +2220,7 @@ void caml_domain_terminate(bool last)
       /* Remove this domain from stw_domains. */
       remove_from_stw_domains(domain_self);
 
-      CAMLassert (domain_self->backup_thread_running);
-      domain_self->backup_thread_running = 0;
+      CAMLassert (backup_thread_running(domain_self));
 
       /* We must signal domain termination before releasing [all_domains_lock]:
          after that, this domain will no longer take part in STWs and emitting
@@ -2291,11 +2294,7 @@ void caml_domain_terminate(bool last)
   caml_free_backtrace_buffer(domain_state->backtrace_buffer);
   caml_free_gc_regs_buckets(domain_state->gc_regs_buckets);
 
-  /* signal the domain termination to the backup thread
-     NB: for a program with no additional domains, the backup thread
-     will not have been started */
-  atomic_store_release(&domain_self->backup_thread_msg, BT_TERMINATE);
-  caml_bt_signal(domain_self);
+  terminate_backup_thread(domain_self);
 
   caml_domain_unlock_hook();
 
@@ -2304,7 +2303,7 @@ void caml_domain_terminate(bool last)
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths. Also, we don't want to decrement
      it back to zero when the last domain exits, for caml_domain_alone()
-     to remain accurate. */ */
+     to remain accurate. */
   if (!last)
     caml_atomic_counter_decr(&caml_num_domains_running);
 }
@@ -2335,7 +2334,7 @@ static void stw_terminate_domain(caml_domain_state *domain, void *data,
          run caml_domain_terminate() on their own, so we need to ask
          the backup thread to terminate here. */
       terminate_backup_thread(domain_self);
-      caml_plat_unlock(&domain_self->domain_lock);
+      caml_domain_unlock_hook();
       /* No particular memory resource cleanup is attempted here, for we
          have no idea which state each domain is in. */
     }
@@ -2352,7 +2351,7 @@ void caml_stop_all_domains(void)
                &stw_terminate_domain, &myself, NULL));
 
   terminate_backup_thread(domain_self);
-  caml_plat_unlock(&domain_self->domain_lock);
+  caml_release_domain_lock();
 
   caml_plat_assert_all_locks_unlocked();
 }
@@ -2376,8 +2375,7 @@ bool caml_free_domains(void)
     if (dom->domain_canceled)
       result = false;
     else
-      caml_plat_mutex_free(&dom->domain_lock);
-    caml_plat_cond_free(&dom->domain_cond);
+      caml_plat_mutex_free(&dom->default_domain_lock);
   }
 
 #ifdef WITH_THREAD_SANITIZER
@@ -2462,18 +2460,6 @@ CAMLprim value caml_domain_tls_set(value t)
 CAMLprim value caml_domain_tls_get(value unused)
 {
   return domain_root_get(&Caml_state->tls_state);
-}
-
-CAMLprim value caml_domain_dls_compare_and_set(value old, value new)
-{
-  CAMLnoalloc;
-  value current = Caml_state->dls_root;
-  if (current == old) {
-    caml_modify_generational_global_root(&Caml_state->dls_root, new);
-    return Val_true;
-  } else {
-    return Val_false;
-  }
 }
 
 CAMLprim value caml_recommended_domain_count(value unused)

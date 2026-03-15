@@ -40,10 +40,6 @@
 #define Max_domains_max 1
 #endif
 
-/* Upper limit for the number of domains. Chosen to be arbitrarily large. Used
- * for sanity checking [max_domains] value in OCAMLRUNPARAM. */
-#define Max_domains_max 4096
-
 /* is the minor heap full or an external interrupt has been triggered */
 Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
 {

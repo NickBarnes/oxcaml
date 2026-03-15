@@ -75,6 +75,19 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
   }
 }
 
+static value raise_if_exception(value res)
+{
+  if (Is_exception_result(res)) {
+    if (Caml_state->raising_async_exn) {
+      Caml_state->raising_async_exn = 0;
+      caml_raise_async(Extract_exception(res));
+    } else {
+      caml_raise(Extract_exception(res));
+    }
+  }
+  return res;
+}
+
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
@@ -84,7 +97,8 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static opcode_t callback_code[] = { STOP };
+static opcode_t callback_code[] =
+  { STOP };
 
 void caml_init_callbacks(void)
 {
@@ -175,19 +189,6 @@ CAMLexport value caml_callback3_exn(value closure,
   arg[2] = arg3;
   res = caml_callbackN_exn0(closure, 3, arg);
   Caml_state->raising_async_exn = 0;
-  return res;
-}
-
-static value raise_if_exception(value res)
-{
-  if (Is_exception_result(res)) {
-    if (Caml_state->raising_async_exn) {
-      Caml_state->raising_async_exn = 0;
-      caml_raise_async(Extract_exception(res));
-    } else {
-      caml_raise(Extract_exception(res));
-    }
-  }
   return res;
 }
 
@@ -413,41 +414,6 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
   return res;
 }
 
-/* Result-returning variants of the above */
-
-Caml_inline caml_result Result_encoded(value encoded)
-{
-  if (Is_exception_result(encoded))
-    return Result_exception(Extract_exception(encoded));
-  else
-    return Result_value(encoded);
-}
-
-CAMLexport caml_result caml_callbackN_res(
-  value closure, int narg, value args[])
-{
-  return Result_encoded(caml_callbackN_exn(closure, narg, args));
-}
-
-CAMLexport caml_result caml_callback_res(
-  value closure, value arg)
-{
-  return Result_encoded(caml_callback_exn(closure, arg));
-}
-
-CAMLexport caml_result caml_callback2_res(
-  value closure, value arg1, value arg2)
-{
-  return Result_encoded(caml_callback2_exn(closure, arg1, arg2));
-}
-
-CAMLexport caml_result caml_callback3_res(
-  value closure, value arg1, value arg2, value arg3)
-{
-  return Result_encoded(caml_callback3_exn(closure, arg1, arg2, arg3));
-}
-
-
 /* Exception-propagating variants of the above */
 CAMLexport value caml_callback3_exn(value closure, value arg1, value arg2,
                                     value arg3)
@@ -489,6 +455,41 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 }
 
 #endif
+
+/* Result-returning variants of the above */
+
+Caml_inline caml_result Result_encoded(value encoded)
+{
+  if (Is_exception_result(encoded))
+    return Result_exception(Extract_exception(encoded));
+  else
+    return Result_value(encoded);
+}
+
+CAMLexport caml_result caml_callbackN_res(
+  value closure, int narg, value args[])
+{
+  return Result_encoded(caml_callbackN_exn(closure, narg, args));
+}
+
+CAMLexport caml_result caml_callback_res(
+  value closure, value arg)
+{
+  return Result_encoded(caml_callback_exn(closure, arg));
+}
+
+CAMLexport caml_result caml_callback2_res(
+  value closure, value arg1, value arg2)
+{
+  return Result_encoded(caml_callback2_exn(closure, arg1, arg2));
+}
+
+CAMLexport caml_result caml_callback3_res(
+  value closure, value arg1, value arg2, value arg3)
+{
+  return Result_encoded(caml_callback3_exn(closure, arg1, arg2, arg3));
+}
+
 
 /* Naming of OCaml values */
 
@@ -573,19 +574,17 @@ CAMLexport void caml_iterate_named_values(caml_named_action f)
 
 CAMLprim value caml_with_async_exns(value body_callback)
 {
-  value res;
-  res = caml_callback_exn(body_callback, Val_unit);
+  caml_result res = Result_encoded(caml_callback_exn(body_callback, Val_unit));
 
   /* raised as a normal exn, even if it was asynchronous */
-  if (Is_exception_result(res)) {
+  if (caml_result_is_exception(res)) {
     /* Drain the queue of pending actions. We may need to do
        this several times if some raise */
     do {
-      res = Extract_exception(res);
-      res = caml_process_pending_actions_with_root_exn(res);
-    } while (Is_exception_result(res));
-    caml_raise(res);
+      res = caml_process_pending_actions_with_root_res(res.data);
+    } while (caml_result_is_exception(res));
+    caml_raise(res.data);
   }
 
-  return res;
+  return res.data;
 }

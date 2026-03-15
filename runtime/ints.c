@@ -677,6 +677,7 @@ CAMLprim int64_t caml_int64_of_string_unboxed(value s)
   }
   if (sign < 0) res = - res;
   return res;
+}
 
 CAMLprim value caml_int64_of_string(value s)
 {

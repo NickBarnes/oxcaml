@@ -366,6 +366,7 @@ static value floatarray_make_unboxed(intnat size, double init, bool local)
   if (size == 0) {
     return Atom(0);
   }
+  CAMLparam0();
   CAMLlocal1(res);
   mlsize_t wsize = size * Double_wosize;
   if (wsize > Max_wosize) caml_invalid_argument("Array.make");
@@ -446,7 +447,7 @@ CAMLprim value caml_array_make(value len, value init)
     return caml_floatarray_make(len, init);
   }
 #endif
-  returnd uniform_array_make(len, init, false);
+  return uniform_array_make(len, init, false);
 }
 CAMLprim value caml_array_make_local(value len, value init)
 {
@@ -456,7 +457,7 @@ CAMLprim value caml_array_make_local(value len, value init)
     return floatarray_make_unboxed(Long_val(len), Double_val(init), true);
   }
 #endif
-  return caml_uniform_array_make(len, init, true);
+  return uniform_array_make(len, init, true);
 }
 
 
@@ -1224,9 +1225,7 @@ static value floatarray_gather(intnat num_arrays,
     (wsize <= Max_young_wosize) ?
     caml_alloc_small(wsize, Double_array_tag) :
     caml_alloc_shr(wsize, Double_array_tag);
-  }
 
-    caml_alloc(wsize, Double_array_tag);
   mlsize_t pos = 0;
   for (mlsize_t i = 0; i < num_arrays; i++) {
     /* [res] is freshly allocated, and no other domain has a reference to it.
@@ -1344,7 +1343,7 @@ CAMLprim value caml_uniform_array_sub(value a, value ofs, value len)
   value arrays[1] = { a };
   intnat offsets[1] = { Long_val(ofs) };
   intnat lengths[1] = { Long_val(len) };
-  return caml_uniform_array_gather(1, arrays, offsets, lengths, false);
+  return uniform_array_gather(1, arrays, offsets, lengths, false);
 }
 
 CAMLprim value caml_uniform_array_sub_local(value a, value ofs, value len)
@@ -1352,7 +1351,7 @@ CAMLprim value caml_uniform_array_sub_local(value a, value ofs, value len)
   value arrays[1] = { a };
   intnat offsets[1] = { Long_val(ofs) };
   intnat lengths[1] = { Long_val(len) };
-  return caml_uniform_array_gather(1, arrays, offsets, lengths, true);
+  return uniform_array_gather(1, arrays, offsets, lengths, true);
 }
 
 CAMLprim value caml_array_sub(value a, value ofs, value len)
@@ -1394,7 +1393,7 @@ CAMLprim value caml_uniform_array_append(value a1, value a2)
   value arrays[2] = { a1, a2 };
   intnat offsets[2] = { 0, 0 };
   intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
-  return caml_uniform_array_gather(2, arrays, offsets, lengths, false);
+  return uniform_array_gather(2, arrays, offsets, lengths, false);
 }
 
 CAMLprim value caml_uniform_array_append_local(value a1, value a2)
@@ -1402,7 +1401,7 @@ CAMLprim value caml_uniform_array_append_local(value a1, value a2)
   value arrays[2] = { a1, a2 };
   intnat offsets[2] = { 0, 0 };
   intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
-  return caml_uniform_array_gather(2, arrays, offsets, lengths, true);
+  return uniform_array_gather(2, arrays, offsets, lengths, true);
 }
 
 CAMLprim value caml_array_append(value a1, value a2)
@@ -1432,7 +1431,7 @@ static value generic_array_concat(gather_impl gather, value al, bool local)
 {
 #define STATIC_SIZE 16
    /* array root registered in gather function */
-  value static_arrays[STATIC_SIZE], * arrays
+  value static_arrays[STATIC_SIZE], * arrays;
   intnat static_offsets[STATIC_SIZE], * offsets;
   intnat static_lengths[STATIC_SIZE], * lengths;
   intnat n, i;
@@ -1500,12 +1499,12 @@ CAMLprim value caml_uniform_array_concat_local(value al)
 
 CAMLprim value caml_array_concat(value al)
 {
-  return generic_array_concat(&array_gather, al, false);
+  return generic_array_concat(&caml_array_gather, al, false);
 }
 
 CAMLprim value caml_array_concat_local(value al)
 {
-  return generic_array_concat(&array_gather, al, true);
+  return generic_array_concat(&caml_array_gather, al, true);
 }
 
 CAMLprim value caml_floatarray_fill_unboxed(

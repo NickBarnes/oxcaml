@@ -216,7 +216,7 @@ CAMLexport void caml_enter_blocking_section(void)
        are further async callbacks pending beyond OCaml signal
        handlers. */
     caml_handle_gc_interrupt();
-    caml_raise_async_if_exception(caml_process_pending_signals_exn(), "");
+    caml_get_value_or_raise_async(caml_process_pending_signals_res(), "");
   }
 
   /* Drop the systhreads lock */
@@ -262,36 +262,6 @@ void caml_init_signal_handling(void) {
   for (mlsize_t i = 0; i < NSIG; i++)
     Field(caml_signal_handlers, i) = Val_unit;
   caml_register_generational_global_root(&caml_signal_handlers);
-}
-
-static void check_async_result(caml_result res, const char *msg)
-{
-  value exn;
-  const value *break_exn;
-
-  if (!res.is_exception)
-    return;
-
-  exn = res.data;
-
-  /* [Break] is not introduced as a predefined exception (in predef.ml and
-     stdlib.ml) since it causes trouble in conjunction with warnings about
-     constructor shadowing e.g. in format.ml.
-     "Sys.Break" must match stdlib/sys.mlp. */
-  break_exn = caml_named_value("Sys.Break");
-  if (break_exn != NULL && exn == *break_exn)
-    return;
-
-  caml_fatal_uncaught_exception_with_message(exn, msg);
-}
-
-value caml_raise_async_if_exception(caml_result res, const char* where)
-{
-  if (res.is_exception) {
-    check_async_result(res, where);
-    caml_raise_async(res.data);
-  }
-  return res;
 }
 
 /* Execute a signal handler immediately */
@@ -421,18 +391,18 @@ caml_result caml_do_pending_actions_res(void)
 
   /* Call signal handlers first */
   caml_result res = caml_process_pending_signals_res();
-  check_async_result(res, "signal handler");
+  caml_check_async(res, "signal handler");
   if (caml_result_is_exception(res)) goto exception;
 
   /* Call memprof callbacks */
   res = caml_memprof_run_callbacks_res();
-  check_async_result(res, "memprof callback");
+  caml_check_async(res, "memprof callback");
   if (caml_result_is_exception(res)) goto exception;
 
   /* Call finalisers */
-  res = caml_final_do_calls_exn();
-  check_async_result(res, "finaliser");
-  if (caml_result_is_exception(exn)) goto exception;
+  res = caml_final_do_calls_res();
+  caml_check_async(res, "finaliser");
+  if (caml_result_is_exception(res)) goto exception;
 
   /* Process external interrupts (e.g. preemptive systhread switching).
      By doing this last, we do not need to set the action pending flag
@@ -448,7 +418,7 @@ exception:
      needed. Therefore, we set [Caml_state->action_pending] again in
      order to force reexamination of callbacks. */
   caml_set_action_pending(Caml_state);
-  return result;
+  return res;
 }
 
 caml_result caml_process_pending_actions_with_root_res(value root)
@@ -465,7 +435,7 @@ caml_result caml_process_pending_actions_with_root_res(value root)
 CAMLprim value caml_process_pending_actions_with_root(value root)
 {
   return caml_get_value_or_raise_async(
-    caml_process_pending_actions_with_root_res(root));
+    caml_process_pending_actions_with_root_res(root), "");
 }
 
 CAMLexport caml_result caml_process_pending_actions_res(void)
@@ -837,7 +807,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
   caml_plat_unlock(&signal_install_mutex);
-  caml_get_value_or_raise_async(caml_process_pending_signals_res());
+  caml_get_value_or_raise_async(caml_process_pending_signals_res(), "");
   CAMLreturn (res);
  err:
   caml_plat_unlock(&signal_install_mutex);

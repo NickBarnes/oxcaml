@@ -665,7 +665,7 @@ G(caml_system__code_begin):
         LEA_VAR(caml_exn_Stack_overflow, %rdi);      \
         C_call  (GCALL(caml_raise_async));           \
     CFI_ENDPROC                          ;           \
-    ENDFUNCTION(G(caml_call_realloc_stack ## suffix))
+    END_FUNCTION(G(caml_call_realloc_stack ## suffix))
 
 
 Make_call_realloc_stack(, NO)
@@ -691,7 +691,7 @@ LBL(caml_call_gc ## suffix):                         \
         LEAVE_FUNCTION;                              \
         ret;                                         \
     CFI_ENDPROC                 ;                    \
-    ENDFUNCTION(G(caml_call_gc ## suffix))
+    END_FUNCTION(G(caml_call_gc ## suffix))
 
 Make_call_gc(, NO)
 Make_call_gc(_sse, XMM)
@@ -710,7 +710,7 @@ CFI_STARTPROC
         SWITCH_OCAML_TO_C
         CHECK_STACK_ALIGNMENT; jmp GCALL(caml_raise_stack_overflow)
 CFI_ENDPROC
-ENDFUNCTION(G(caml_raise_stack_overflow_nat))
+END_FUNCTION(G(caml_raise_stack_overflow_nat))
 
 #define r15_sub_words(n) subq $8+8*n, %r15
 #define r15_sub_1        r15_sub_words(1)
@@ -728,7 +728,7 @@ CFI_STARTPROC;                                 \
         LEAVE_FUNCTION;                        \
         ret;                                   \
 CFI_ENDPROC ;                                  \
-ENDFUNCTION(G(base_name ## simd)) ;
+END_FUNCTION(G(base_name ## simd)) ;
 
 #define Make_alloc_funs(words) \
 Make_alloc_fun(caml_alloc ## words, words,) \
@@ -750,7 +750,7 @@ Make_alloc_fun(caml_alloc ## words, words, _avx512)
         LEAVE_FUNCTION;                              \
         ret;                                         \
    CFI_ENDPROC                  ;                    \
-   ENDFUNCTION(G(caml_call_local_realloc ## suffix))
+   END_FUNCTION(G(caml_call_local_realloc ## suffix))
 
 Make_call_local_realloc(, NO)
 Make_call_local_realloc(_sse, XMM)
@@ -870,7 +870,7 @@ END_FUNCTION(caml_c_call)
         popq    %rbp; CFI_ADJUST(-8);                                   \
         ret         ;                                                   \
     CFI_ENDPROC                 ;                                       \
-    ENDFUNCTION(G(caml_c_call_copy_stack_args ## suffix)) ;             \
+    END_FUNCTION(G(caml_c_call_copy_stack_args ## suffix)) ;            \
                                                                         \
     FUNCTION(G(caml_c_call_stack_args ## suffix)) ;                     \
     CFI_STARTPROC                       ;                               \
@@ -894,7 +894,7 @@ END_FUNCTION(caml_c_call)
         LEAVE_FUNCTION;                                                 \
         RET_FROM_C_CALL         ;                                       \
     CFI_ENDPROC                 ;                                       \
-    ENDFUNCTION(G(caml_c_call_stack_args ## suffix));                   \
+    END_FUNCTION(G(caml_c_call_stack_args ## suffix));
 
 /* We don't need an SSE variant for this because the stack is always
    16-aligned */
@@ -1511,7 +1511,7 @@ CFI_STARTPROC
         LEA_VAR(caml_array_align_error_asm, %rax)
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
-ENDFUNCTION(G(caml_ml_array_align_error))
+END_FUNCTION(G(caml_ml_array_align_error))
 
 FUNCTION(G(caml_assert_stack_invariants))
 CFI_STARTPROC

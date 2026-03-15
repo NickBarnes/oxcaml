@@ -155,7 +155,7 @@ void caml_ephe_clean (value v) {
   hd = Hd_val(v);
   size = Wosize_hd (hd);
   for (mlsize_t i = CAML_EPHE_FIRST_KEY; i < size; i++) {
-    child = Ephe_key(v, i);
+    child = ephe_key(v, i);
   ephemeron_again:
     if (child != caml_ephe_none && Is_block(child)) {
       if (Tag_val (child) == Forward_tag) {

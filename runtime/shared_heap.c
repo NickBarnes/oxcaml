@@ -248,7 +248,7 @@ void caml_adopt_all_orphan_heaps(struct caml_heap_state* local) {
   }
   caml_plat_unlock(&pool_freelist.lock);
   if (adopted_pools || adopted_large)
-    CMAL_GC_MESSAGE(MAJOR_HEAP.
+    CAML_GC_MESSAGE(MAJOR_HEAP,
                     "Adopted %d pools, %d large blocks",
                     adopted_pools, adopted_large);
   local->next_to_sweep = 0;
@@ -446,7 +446,7 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          pool**,
                          sizeclass_t sz ,
                          int release_to_global_pool);
-static void pool_finalise(struct caml_heap_state* local, pool**, sizeclass sz);
+static void pool_finalise(struct caml_heap_state* local, pool**, sizeclass_t sz);
 
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an allocation */
@@ -826,6 +826,7 @@ void caml_get_global_heap_stats(struct global_heap_stats *stats)
   stats->max_chunk_words = pool_freelist.max_chunk_words;
   stats->chunks = pool_freelist.chunks;
   caml_plat_unlock(&pool_freelist.lock);
+}
 
 /* Purging */
 
@@ -848,14 +849,14 @@ static void large_alloc_finalise(struct caml_heap_state* local) {
 }
 
 static void pool_finalise(struct caml_heap_state* local, pool** plist,
-                         sizeclass sz) {
+                         sizeclass_t sz) {
   pool *a;
   while ((a = *plist) != 0) {
     *plist = a->next;
 
     header_t* p = POOL_FIRST_BLOCK(a, sz);
     header_t* end = POOL_END(a);
-    mlsize_t wh = wsize_sizeclass[sz];
+    mlsize_t wh = whsize_sizeclass[sz];
 
     while (p + wh <= end) {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
@@ -877,7 +878,7 @@ static void pool_finalise(struct caml_heap_state* local, pool** plist,
 
 void caml_finalise_heap(void) {
   struct caml_heap_state *local = Caml_state->shared_heap;
-  sizeclass sz;
+  sizeclass_t sz;
 
   /* Finalise and release unswept local pools. */
   for (sz = 0; sz < NUM_SIZECLASSES; sz++) {
@@ -2399,7 +2400,7 @@ struct mem_stats {
   uintnat live_blocks;
 };
 
-static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
+static void verify_pool(pool* a, sizeclass_t sz, struct mem_stats* s) {
   for (value *v = a->next_obj; v; v = (value *)v[1]) {
     CAMLassert(*v == 0);
   }

@@ -409,7 +409,7 @@ uintnat caml_mem_round_up_mapping_size(uintnat size)
       size > caml_plat_hugepagesize/2)
     return caml_round_up(size, caml_plat_hugepagesize);
   else
-    return cmal_round_up(size, caml_plat_pagesize);
+    return caml_round_up(size, caml_plat_pagesize);
 }
 
 #define Is_page_aligned(size) ((size & (caml_plat_pagesize - 1)) == 0)
