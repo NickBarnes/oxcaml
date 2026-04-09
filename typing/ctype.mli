@@ -374,6 +374,11 @@ val filter_functor:
            Returns a result instead of raising [Unify].
            May return [Some _] when the type is not principally known,
            so you should check for principality. *)
+val filter_arity:
+  Env.t -> arg_label -> type_expr ->
+  (Env.t * type_expr, filter_arrow_failure) result
+(* A specialized case of unification with [ l:_ -> 'a ] for all arrows *)
+
 val is_really_poly : Env.t -> type_expr -> bool
 val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises

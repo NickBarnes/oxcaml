@@ -4084,6 +4084,28 @@ let filter_functor env t l =
                   env
                   (Diff { got = t'; expected = t } :: trace)))
 
+let filter_arity env l t =
+  match expand_head_trace env t with
+  | exception Unify_trace trace ->
+      let t', _, _ = function_type l ~param_hole:false (get_level t) in
+      Error (Unification_error
+               (expand_to_unification_error
+                  env
+                  (Diff { got = t'; expected = t } :: trace)))
+  | t ->
+      match get_desc t with
+      | Tvar _ ->
+          let t', _, ty_ret =
+            function_type l ~param_hole:false (get_level t)
+          in
+          link_type t t';
+          Ok (env, ty_ret)
+      | Tarrow(_, _, ty_ret, _) -> Ok (env, ty_ret)
+      | Tfunctor (_, id, pack, ct) ->
+            let env, ret = open_tfunctor ~loc:Location.none env id pack ct in
+            Ok (env, ret)
+      | _ -> Error Not_a_function
+
 let is_really_poly env ty =
   let snap = Btype.snapshot () in
   let really_poly =
