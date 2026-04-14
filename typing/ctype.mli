@@ -375,7 +375,7 @@ val filter_functor:
            May return [Some _] when the type is not principally known,
            so you should check for principality. *)
 val filter_arity:
-  Env.t -> arg_label -> type_expr ->
+  Env.t -> type_expr -> arg_label ->
   (Env.t * type_expr, filter_arrow_failure) result
 (* A specialized case of unification with [ l:_ -> 'a ] for all arrows *)
 

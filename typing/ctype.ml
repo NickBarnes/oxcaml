@@ -4070,7 +4070,7 @@ let filter_functor env t l =
       | Tvar _ -> Ok None
       | _ -> Error Not_a_function
 
-let filter_arity env l t =
+let filter_arity env t l =
   let param_hole = false in
   match expand_head_trace env t with
   | exception Unify_trace trace ->

@@ -4084,7 +4084,7 @@ let enforce_syntactic_arity ~loc env exp_type result_params body =
   *)
   (* Assert that [ty] is a function, and return its return type. *)
   let filter_ty_ret_exn arg_label (env,ty) =
-    match filter_arity env arg_label ty with
+    match filter_arity env ty arg_label with
     | Ok (env,ty_ret) -> env, ty_ret
     | Error error ->
         let trace =
