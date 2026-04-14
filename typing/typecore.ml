@@ -4412,8 +4412,11 @@ and type_expect_
         type_function env params body_constraint body ty_expected ~in_function
           ~first:true
       in
-      if contains_gadt = Contains_gadt then
-        enforce_syntactic_arity ~loc env exp_type result_params body;
+      begin match contains_gadt with
+      | No_gadt -> ()
+      | Contains_gadt ->
+          enforce_syntactic_arity ~loc env exp_type result_params body
+      end;
       let params =
         List.map (fun { param; has_poly = _ } -> param) result_params
       in
