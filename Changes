@@ -141,6 +141,10 @@ Working version
 
 ### Tools:
 
+- #14318, #14709, ocamldoc: use "Module_name (Library name)" rather than
+   "Library name: Module_name" as the title of html pages.
+   (Florian Angeletti, report by Antonin Décimo, review by Nicolás Ojeda Bär)
+
 - #14499: in ocamltest, remove support for the legacy
   test syntax (with '***') and the '-translate' option
   to convert from this syntax.
