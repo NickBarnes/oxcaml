@@ -228,8 +228,8 @@ caml_unit_deps_find(const char *name)
 }
 
 /* The result of this macro must not be exposed to the GC. */
-#define init_module_failure_exn(fmt, ...) \
-  Make_exception_result( \
+#define init_module_failure_res(fmt, ...) \
+  Result_exception( \
     caml_exception_failure_value( \
       caml_alloc_sprintf("%s: " fmt, __func__, __VA_ARGS__)))
 
@@ -238,23 +238,23 @@ caml_unit_deps_find(const char *name)
    Returns an exception result on failure, Val_unit on success.
    The exception result must not be exposed to the GC.
    Not portable: must be called from the main thread only. */
-static value caml_init_module_rec_exn(struct caml_unit_deps_entry *entry)
+static caml_result caml_init_module_rec_res(struct caml_unit_deps_entry *entry)
 {
   CAMLparam0();
   CAMLlocal1(closure);
 
   /* Check current state */
   if (entry->init_state == INIT_STATE_DONE) {
-    CAMLreturn(Val_unit);
+    CAMLreturnT(caml_result, Result_value(Val_unit));
   }
 
   if (entry->init_state == INIT_STATE_FAILED) {
-    CAMLreturn(Make_exception_result(entry->raised_exn));
+    CAMLreturnT(caml_result, Result_exception(entry->raised_exn));
   }
 
   if (entry->init_state == INIT_STATE_INITIALIZING) {
-    CAMLreturn(init_module_failure_exn(
-      "cycle detected at module %s", entry->unit_name));
+    CAMLreturnT(caml_result, init_module_failure_res(
+                  "cycle detected at module %s", entry->unit_name));
   }
 
   /* Mark as initializing before processing dependencies */
@@ -264,22 +264,22 @@ static value caml_init_module_rec_exn(struct caml_unit_deps_entry *entry)
   for (intnat i = 0; i < entry->num_deps; i++) {
     intnat dep_idx = entry->dep_indices[i];
     if (dep_idx < 0 || dep_idx >= caml_unit_deps_table.num_units) {
-      value result = init_module_failure_exn(
+      caml_result result = init_module_failure_res(
         "dependency index %ld out of range for module %s",
         (long)dep_idx, entry->unit_name);
       entry->init_state = INIT_STATE_FAILED;
-      entry->raised_exn = Extract_exception(result);
+      entry->raised_exn = result.data;
       caml_register_generational_global_root(&entry->raised_exn);
-      CAMLreturn(result);
+      CAMLreturnT(caml_result, result);
     }
     struct caml_unit_deps_entry *dep =
       &caml_unit_deps_table.entries[dep_idx];
-    value result = caml_init_module_rec_exn(dep);
-    if (Is_exception_result(result)) {
+    caml_result result = caml_init_module_rec_res(dep);
+    if (caml_result_is_exception(result)) {
       entry->init_state = INIT_STATE_FAILED;
-      entry->raised_exn = Extract_exception(result);
+      entry->raised_exn = result.data;
       caml_register_generational_global_root(&entry->raised_exn);
-      CAMLreturn(result);
+      CAMLreturnT(caml_result, result);
     }
   }
 
@@ -316,31 +316,31 @@ static value caml_init_module_rec_exn(struct caml_unit_deps_entry *entry)
     entry->init_state = INIT_STATE_FAILED;
     entry->raised_exn = Extract_exception(result);
     caml_register_generational_global_root(&entry->raised_exn);
-    CAMLreturn(result);
+    CAMLreturnT(caml_result, Result_exception(entry->raised_exn));
   }
 
   /* Mark as done */
   entry->init_state = INIT_STATE_DONE;
 
-  CAMLreturn(Val_unit);
+  CAMLreturnT(caml_result, Result_value(Val_unit));
 }
 
 /* Public API: Initialize a module by name (exception-returning variant) */
-CAMLexport value caml_init_module_exn(const char *name)
+CAMLexport caml_result caml_init_module_res(const char *name)
 {
   struct caml_unit_deps_entry *entry = caml_unit_deps_find(name);
   if (entry == NULL) {
-    return init_module_failure_exn("unit %s not found", name);
+    return init_module_failure_res("unit %s not found", name);
   }
-  return caml_init_module_rec_exn(entry);
+  return caml_init_module_rec_res(entry);
 }
 
 /* Public API: Initialize a module by name (raises on failure) */
 CAMLexport void caml_init_module(const char *name)
 {
-  value result = caml_init_module_exn(name);
-  if (Is_exception_result(result)) {
-    caml_raise(Extract_exception(result));
+  caml_result result = caml_init_module_res(name);
+  if (caml_result_is_exception(result)) {
+    caml_raise(result.data);
   }
 }
 
@@ -351,10 +351,10 @@ CAMLprim value caml_init_module_from_ocaml(value v_name)
 {
   /* Copy the string to C heap since caml_init_module_exn may trigger GC */
   char *name = caml_stat_strdup(String_val(v_name));
-  value result = caml_init_module_exn(name);
+  caml_result result = caml_init_module_res(name);
   caml_stat_free(name);
-  if (Is_exception_result(result)) {
-    caml_raise(Extract_exception(result));
+  if (caml_result_is_exception(result)) {
+    caml_raise(result.data);
   }
   return Val_unit;
 }

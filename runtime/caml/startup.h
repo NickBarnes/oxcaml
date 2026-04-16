@@ -70,11 +70,11 @@ CAMLextern void caml_init_module(const char *name);
 
 /* Exception-returning variant of [caml_init_module].
    Returns an exception result on failure, Val_unit on success. Use
-   Is_exception_result to check for failure and Extract_exception to get the
+   caml_result_is_exception to check for failure and .data to get the
    exception value.
 
    Must be called from the main thread only; not safe to call from
    other domains. */
-CAMLextern value caml_init_module_exn(const char *name);
+CAMLextern caml_result caml_init_module_res(const char *name);
 
 #endif /* CAML_STARTUP_H */

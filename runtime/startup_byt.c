@@ -693,9 +693,9 @@ CAMLexport void caml_startup_code(
     "%s: manual module initialization is only supported in native code", \
     __func__)
 
-CAMLexport value caml_init_module_exn(const char *name)
+CAMLexport caml_result caml_init_module_res(const char *name)
 {
-  return Make_exception_result(
+  return Result_exception(
     caml_exception_failure_value(init_not_supported_msg()));
 }
 
