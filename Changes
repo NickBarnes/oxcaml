@@ -1027,6 +1027,9 @@ OCaml 5.5.0
   the file could be incorrectly added to the visible table.
   (Hugo Heuzard, review by Florian Angeletti)
 
+- #14719, #14721: compute arity correctly for module-dependent function
+  (Florian Angeletti, report by Jeremy Yallop, review by Stefan Muenzel)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
