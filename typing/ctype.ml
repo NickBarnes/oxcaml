@@ -6480,7 +6480,7 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
                 Tvariant (set_row_name row (Some (Path.subst id_map p, tl)))
             | _ -> Tvariant row
           end
-      | desc -> copy_type_desc (nondep_type_rec env ids) desc
+      | desc -> copy_type_desc nondep_trec desc
     with
     | desc' ->
       Transient_expr.set_stub_desc ty' desc';
@@ -6489,7 +6489,7 @@ let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
       TypeHash.remove nondep_hash ty;
       raise e
 
-and nondep_type_rec ?expand_private env id ty =
+let nondep_type_rec ?expand_private env id ty =
   nondep_type_rec_aux ?expand_private env [] id ty
 
 let nondep_type env id ty =

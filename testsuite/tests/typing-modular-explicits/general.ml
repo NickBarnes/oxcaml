@@ -1437,6 +1437,45 @@ val u : ((module M : T) -> ([> M.v ] as 'a) -> 'a) -> (module T) -> 'a -> 'a =
   <fun>
 |}]
 
+(* Test shadowing of an include that could cause an error due to a module
+   not matching an inferred signature. *)
+
+module U = struct
+  type t = unit = ()
+end
+module M = struct
+  include U
+  type t = float
+  module type S = sig type t end
+  let f : (module X:S) -> X.t -> int = fun (module X:S)     _  -> 3
+end
+
+[%%expect{|
+module U : sig type t = unit = () end
+module M :
+  sig
+    type t = float
+    module type S = sig type t end
+    val f : (module X : S) -> X.t -> int
+  end
+|}]
+
+module type T = sig
+  type t
+end
+
+module F (X : T) = struct
+  type t = (module Y : T) -> Y.t -> X.t
+end
+
+module M = F(struct type t = float end)
+
+[%%expect{|
+module type T = sig type t end
+module F : (X : T) -> sig type t = (module Y : T) -> Y.t -> X.t end
+module M : sig type t = (module Y : T) -> Y.t -> float end
+|}]
+
 (** Warnings *)
 
 module type Iter = sig

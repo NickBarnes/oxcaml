@@ -287,7 +287,7 @@ let print ~with_scope ppf =
         pp_stamped (name, stamp)
   | Unscoped us ->
       let Unscoped.{ name; stamp } = Unscoped.get_desc us in
-      fprintf ppf "U%a"
+      fprintf ppf "U:%a"
         pp_stamped (name, stamp)
   | Scoped { name; stamp; scope } ->
       fprintf ppf "%a%s"
