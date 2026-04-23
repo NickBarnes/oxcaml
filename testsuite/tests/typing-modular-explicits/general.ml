@@ -1452,34 +1452,12 @@ end
 
 [%%expect{|
 module U : sig type t = unit = () end
-Lines 4-9, characters 11-3:
-4 | ...........struct
-5 |   include U
-6 |   type t = float
-7 |   module type S = sig type t end
-8 |   let f : (module X:S) -> X.t -> int = fun (module X:S)     _  -> 3
-9 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type t = unit = ()
-           type t = float
-           module type S = sig type t end
-           val f : (module X : S) -> X.t -> int
-         end
-       is not included in
-         sig
-           type t = float
-           module type S = sig type t end
-           val f : (module X : S) -> X.t -> int
-         end
-       Values do not match:
-         val f : (module X : S) -> X.t -> int
-       is not included in
-         val f : (module X : S) -> X.t -> int
-       The type "(module X : S) -> X.t -> int" is not compatible with the type
-         "(module X : S) -> X.t -> int"
-       Type "X.t" is not compatible with type "X.t"
+module M :
+  sig
+    type t = float
+    module type S = sig type t end
+    val f : (module X : S) -> X.t -> int
+  end
 |}]
 
 module type T = sig
@@ -1495,9 +1473,7 @@ module M = F(struct type t = float end)
 [%%expect{|
 module type T = sig type t end
 module F : (X : T) -> sig type t = (module Y : T) -> Y.t -> X.t end
->> Fatal error: nondep_supertype not included in original module type
-Uncaught exception: Misc.Fatal_error
-
+module M : sig type t = (module Y : T) -> Y.t -> float end
 |}]
 
 (** Warnings *)
