@@ -43,6 +43,9 @@ module Unscoped = struct
     | Ulink u -> get_desc u
 
   let name us = (get_desc us).name
+  let print ppf us =
+    let d = get_desc us in
+    Format.fprintf ppf "%s/%d" d.name d.stamp
 
   let refresh us = create (get_desc us).name
 
