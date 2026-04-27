@@ -194,7 +194,11 @@ Error: This recursive type is not regular.
 
 type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
 [%%expect{|
-type 'b t = 'b * 'b
+Line 1, characters 0-44:
+1 | type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: A type variable is unbound in this type declaration.
+       In type "'a * 'b" the variable "'b" is unbound
 |}]
 type 'a t = 'a * 'b constraint 'a = 'b t;;
 [%%expect{|
@@ -408,8 +412,12 @@ and 'a id = 'a
 and s = cycle t
 [%%expect{|
 type 'a t constraint 'a = 'b * 'c
-Uncaught exception: Stack overflow
-
+Line 2, characters 0-21:
+2 | type cycle = cycle id
+    ^^^^^^^^^^^^^^^^^^^^^
+Error: The type abbreviation "cycle" is cyclic:
+         "cycle" = "cycle id",
+         "cycle id" = "cycle"
 |}]
 
 (* Vanishing constraints should be checked during the translation *)
