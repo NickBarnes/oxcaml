@@ -471,13 +471,18 @@ X(16) X(17) X(18) X(19) X(20) X(21) X(22) X(23) X(24) X(25) X(26) X(27) X(27) X(
         .text
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(CAMLSEP(hot,code_begin))
-        .globl  G(CAMLSEP(hot,code_begin))
-G(CAMLSEP(hot,code_begin)):
+/* The section names, and matching symbols, caml_hot__code_begin and
+   caml_hot__code_end are used by OCamlFDO. They need to match each
+   other, have C linkage names, and match the hard-wired names in OCamlFDO.
+*/
 
-        TEXT_SECTION(CAMLSEP(hot,code_end))
-        .globl  G(CAMLSEP(hot,code_end))
-G(CAMLSEP(hot,code_end)):
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  G(caml_hot__code_begin)
+G(caml_hot__code_begin):
+
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  G(caml_hot__code_end)
+G(caml_hot__code_end):
 #endif
 
 /******************************************************************************/
