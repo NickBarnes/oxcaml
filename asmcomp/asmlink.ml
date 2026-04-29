@@ -116,8 +116,7 @@ let make_startup_file linkenv unix ~ppf_dump ~sourcefile_for_dwarf genfns units
   let system_comp_unit =
     CU.create CU.Prefix.empty (CU.Name.of_string "_system")
   in
-  let code_comp_units = startup_comp_unit :: name_list
-  in
+  let code_comp_units = startup_comp_unit :: name_list in
   let code_comp_units =
     if !Oxcaml_flags.use_cached_generic_functions
     then Generic_fns.imported_units cached_gen @ code_comp_units
