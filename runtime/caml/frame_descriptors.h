@@ -140,19 +140,24 @@ typedef unsigned char frame_descr;
 
 #define FRAME_DELTA_ESCAPE 0
 
-/* The eight most common GC-root registers, by measurement. The
- * compiler (hot_regs in backend/emitaux.ml) and the runtime must
+/* The eight most common GC-root registers. The compiler
+ * (frame_hot_regs in backend/<arch>/arch.ml) and the runtime must
  * agree on this table: a mismatch causes heap corruption. The GC maps
  * bit-index -> register-number (this forward table); the compiler
  * maps register-number -> bit-index.
  *
- * TODO: when short descriptors are ported to ARM64, measure there to
- * choose the hot register numbers, and make this
- * architcture-specific */
+ * The amd64 set was chosen by measurement; the arm64 set (x0-x7) is an
+ * initial guess pending measurement (a suboptimal choice only costs
+ * escaped descriptors). */
 
 #define FRAME_NUM_HOT_REGS 8
 CAMLunused static const unsigned char
-  caml_frame_hot_regs[FRAME_NUM_HOT_REGS] = { 0, 1, 2, 3, 4, 5, 6, 8 };
+  caml_frame_hot_regs[FRAME_NUM_HOT_REGS] =
+#ifdef TARGET_arm64
+  { 0, 1, 2, 3, 4, 5, 6, 7 };
+#else
+  { 0, 1, 2, 3, 4, 5, 6, 8 };
+#endif
 
 /* Field byte offsets within an escaped descriptor body (medium and long). */
 #define Frame_retaddr_rel_ofs   0

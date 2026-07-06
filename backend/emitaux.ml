@@ -64,10 +64,9 @@ let frame_section_epoch = ref 0
 let start_new_code_section () = incr frame_section_epoch
 
 (* Set by a backend before [emit_frames] when the short descriptor format cannot
-   be emitted in the current context: internal-assembler (which cannot resolve
-   the variable-length return-address delta directive) and ARM64 (where the
-   delta is not yet ported). Every descriptor then escapes to the normal
-   format. *)
+   be emitted in the current context: the internal-assembler / binary-emitter
+   backends (which cannot resolve the variable-length return-address delta
+   directive). Every descriptor then escapes to the normal format. *)
 let disable_short_descriptors = ref false
 
 let is_none_dbg d = Debuginfo.Dbg.is_none (Debuginfo.get_dbg d)
@@ -296,7 +295,7 @@ let emit_frames a =
      [caml_frame_hot_regs] in runtime/caml/frame_descriptors.h; the compiler and
      the runtime MUST agree exactly or the GC scans the wrong registers (silent
      heap corruption). *)
-  let hot_regs = [| 0; 1; 2; 3; 4; 5; 6; 8 |] in
+  let hot_regs = Arch.frame_hot_regs in
   let hot_reg_bit reg =
     let rec find i =
       if i >= Array.length hot_regs

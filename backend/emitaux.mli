@@ -62,7 +62,7 @@ val start_new_code_section : unit -> unit
 
 (* When set before [emit_frames], every frame descriptor escapes to the normal
    format instead of the short encoding. Backends set this when the short format
-   cannot be emitted (the internal-assembler / JIT binary backend; ARM64). *)
+   cannot be emitted (the internal-assembler / JIT binary backends). *)
 val disable_short_descriptors : bool ref
 
 (** [with_snapshot f] runs [f] and returns its result, but also ensures that the
