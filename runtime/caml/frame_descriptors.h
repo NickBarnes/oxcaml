@@ -134,7 +134,8 @@
  *       int32 debug_info[frame_has_allocs() ? num_allocs : 1];
  *
  * Each debug info is a signed relative offset, in bytes, from its own
- * address to a debuginfo structure. */
+ * address to a debuginfo structure (or to a suffix-sharing jump word;
+ * see runtime/backtrace_nat.c). */
 
 typedef unsigned char frame_descr;
 
