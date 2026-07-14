@@ -308,19 +308,35 @@ extern uintnat caml_measure_all_frametables;
 
 /* Why an escaped descriptor could not use the short format. [ESC_FITS] means
    its content is short-compatible, so it escaped only for a positional reason
-   (a function / text-section boundary). Mirrors [short_encoding] in
-   backend/emitaux.ml; the enum order follows that function's checks. */
+   (a function / text-section boundary). Values are declared in reporting
+   order: cases we expect on real binaries first (cold register last of
+   those), then cases we expect never to see. */
 enum escape_reason {
-  ESC_FITS = 0,     /* short-compatible: escaped only for a boundary */
-  ESC_LONG,         /* long (32-bit) descriptor */
   ESC_BADSIZE,      /* frame size 0, > 1008, or not a multiple of 16 */
+  ESC_BIGALLOC,     /* an allocation size that does not fit a 4-bit nibble */
+  ESC_FT_FIRST,     /* first in its frametable: always escapes; positional,
+                       so never returned by classify_escape */
+  ESC_FITS,         /* short-compatible: escaped only for a boundary */
+  ESC_COLDREG,      /* a live register outside the 8 hot registers */
+  ESC_LONG,         /* long (32-bit) descriptor */
   ESC_BADSLOT,      /* a live stack slot is not word-aligned */
   ESC_SLOTBEYOND,   /* a live stack slot outside the frame (stack argument) */
   ESC_NOALLOC_REGS, /* non-allocation descriptor with live registers */
-  ESC_COLDREG,      /* a live register outside the 8 hot registers */
   ESC_MANYALLOCS,   /* more than 255 allocations (comballoc) */
-  ESC_BIGALLOC,     /* an allocation size that does not fit a 4-bit nibble */
   NUM_ESCAPE_REASONS
+};
+
+static const char *const escape_names[NUM_ESCAPE_REASONS] = {
+  [ESC_BADSIZE]      = "bad frame size",
+  [ESC_BIGALLOC]     = "alloc too large",
+  [ESC_FT_FIRST]     = "first in frametable",
+  [ESC_FITS]         = "fits (section boundary)",
+  [ESC_COLDREG]      = "cold register",
+  [ESC_LONG]         = "long descriptor",
+  [ESC_BADSLOT]      = "unaligned stack slot",
+  [ESC_SLOTBEYOND]   = "stack slot outside frame",
+  [ESC_NOALLOC_REGS] = "non-alloc with live registers",
+  [ESC_MANYALLOCS]   = "> 255 allocations",
 };
 
 struct frametable_stats {
@@ -352,12 +368,10 @@ struct frametable_stats {
   size_t medium_descrs;
   size_t long_descrs;
 
-  /* Why escaped (non-short) descriptors could not use the short format.
-     [escape_ft_first] is the first descriptor of a frametable, which always
-     escapes. Of the remaining escapes, [escape_reason[ESC_FITS]] are
-     short-compatible and so escaped only for a function / text-section
-     boundary -- the descriptors a cross-function delta chain could reclaim. */
-  size_t escape_ft_first;
+  /* Why escaped (non-short) descriptors could not use the short format,
+     indexed by enum escape_reason. [ESC_FITS] entries are short-compatible
+     and so escaped only for a function / text-section boundary -- the
+     descriptors a cross-function delta chain could reclaim. */
   size_t escape_reason[NUM_ESCAPE_REASONS];
 
   /* Frame sizes */
@@ -489,12 +503,11 @@ static void accumulate_frametable_stats(intnat *frametable,
   debuginfo_high = Align_to(debuginfo_high, uintnat);
   stats->total_codesize += (stats->max_retaddr - stats->min_retaddr);
   stats->total_ft_size += (stats->max_descr - stats->min_descr);
-  /* Debuginfo bytes = the record words (each record is two uint32, counted
-     by debuginfo_count) plus the name_info/name_and_loc_info struct span.
-     The deduped filename/defname strings live in a separate section and are
-     not attributed to a frametable here. */
-  stats->total_debuginfo_size += debuginfo_count * 2 * sizeof(uint32_t)
-                                 + (debuginfo_high - debuginfo_low);
+  /* Debuginfo bytes = the span bracketing the record and jump words and the
+     name_info/name_and_loc_info structs (counting record words would multiply
+     out suffix sharing). The deduped filename/defname strings live in a
+     separate section and are not attributed to a frametable here. */
+  stats->total_debuginfo_size += (debuginfo_high - debuginfo_low);
   stats->total_descrs += stats->descrs;
   stats->total_debuginfo += debuginfo_count;
   if (stats->min_retaddr) {
@@ -503,6 +516,18 @@ static void accumulate_frametable_stats(intnat *frametable,
     else
       ++ stats->ft_after_code;
   }
+}
+
+/* Is [reg] one of the eight hot registers the short format can encode? */
+
+static bool reg_is_hot(size_t reg)
+{
+  for (int i = 0; i < FRAME_NUM_HOT_REGS; ++i) {
+    if (caml_frame_hot_regs[i] == reg) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /* Report all accumulated frametable stats to stdout. */
@@ -537,26 +562,20 @@ static void report_stats(struct frametable_stats *stats)
          stats->return_to_C, stats->with_alloc, stats->with_debug);
 
   {
-    static const char *const escape_names[NUM_ESCAPE_REASONS] = {
-      "fits (reclaimable boundary escape)",
-      "long",
-      "bad frame size",
-      "bad stack slot",
-      "stack slot outside frame",
-      "non-alloc with registers",
-      "cold register",
-      "> 255 allocations",
-      "alloc size > nibble"
-    };
-    size_t total_escapes = stats->escape_ft_first;
+    size_t total_escapes = 0;
     for (int i = 0; i < NUM_ESCAPE_REASONS; ++i) {
       total_escapes += stats->escape_reason[i];
     }
-    printf("Escaped descriptors: %zu (frametable-first %zu)\n",
-           total_escapes, stats->escape_ft_first);
+    printf("Escaped descriptors\n");
     for (int i = 0; i < NUM_ESCAPE_REASONS; ++i) {
-      printf("  %-36s %zu\n", escape_names[i], stats->escape_reason[i]);
+      printf("  %-33s %9zu (%4.1f%%)\n", escape_names[i],
+             stats->escape_reason[i],
+             total_escapes
+               ? 100.0 * stats->escape_reason[i] / total_escapes : 0.0);
     }
+    printf("%35s %9zu (%.1f%%)\n", "Total:", total_escapes,
+           stats->total_descrs
+             ? 100.0 * total_escapes / stats->total_descrs : 0.0);
   }
 
   printf("Max pos retaddr offset %zu\n", stats->max_pos_retaddr_rel);
@@ -605,6 +624,45 @@ static void report_stats(struct frametable_stats *stats)
          MAX_REG, stats->big_reg_entries);
   printf("Non-allocation descriptors with registers: %zu\n",
          stats->noalloc_with_regs);
+
+  {
+    /* The FRAME_NUM_HOT_REGS most-used registers (ties kept in the current
+       hot set), as lines to paste into runtime/caml/frame_descriptors.h and
+       backend/<arch>/arch.ml -- or a note that no change is warranted. */
+    bool chosen[REGS] = { false };
+    bool same = true;
+    const char *sep;
+    for (int k = 0; k < FRAME_NUM_HOT_REGS; ++k) {
+      int best = -1;
+      for (int r = 0; r < REGS; ++r) {
+        if (chosen[r]) continue;
+        if (best < 0 || stats->reg[r] > stats->reg[best]
+            || (stats->reg[r] == stats->reg[best]
+                && reg_is_hot(r) && !reg_is_hot(best)))
+          best = r;
+      }
+      chosen[best] = true;
+    }
+    for (int r = 0; r < REGS; ++r) {
+      if (chosen[r] != reg_is_hot(r)) { same = false; break; }
+    }
+    if (same) {
+      printf("Existing hot register set is optimal.\n");
+    } else {
+      printf("Hot registers (frame_descriptors.h): {");
+      sep = " ";
+      for (int r = 0; r < REGS; ++r) {
+        if (chosen[r]) { printf("%s%d", sep, r); sep = ", "; }
+      }
+      printf(" };\n");
+      printf("Hot registers (arch.ml): let frame_hot_regs = [|");
+      sep = " ";
+      for (int r = 0; r < REGS; ++r) {
+        if (chosen[r]) { printf("%s%d", sep, r); sep = "; "; }
+      }
+      printf(" |]\n");
+    }
+  }
 }
 
 /* Actually floor(log_2(x))+1, clamped at MAX_LOG-1.
@@ -686,24 +744,11 @@ static void add_slot(size_t byte_ofs, size_t *slots, size_t *max_slot)
   }
 }
 
-/* Is [reg] one of the eight hot registers the short format can encode? */
-
-static bool reg_is_hot(size_t reg)
-{
-  for (int i = 0; i < FRAME_NUM_HOT_REGS; ++i) {
-    if (caml_frame_hot_regs[i] == reg) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/* For an escaped (non-short, non-return-to-C) descriptor, determine why it
-   could not be encoded in the short format, mirroring [short_encoding] in
-   backend/emitaux.ml (same checks, same order). Returns [ESC_FITS] if the
-   content is short-compatible, meaning the descriptor escaped only for a
-   positional reason (first-in-frametable or a function/text-section
-   boundary). */
+/* For an escaped (non-short, non-return-to-C, non-first-in-frametable)
+   descriptor, determine why it could not be encoded in the short format,
+   mirroring [short_encoding] in backend/emitaux.ml (same checks, same
+   order). Returns [ESC_FITS] if the content is short-compatible, meaning
+   the descriptor escaped only for a function/text-section boundary. */
 
 static enum escape_reason classify_escape(frame_descr *d,
                                           struct frame_descr_decoded *dec)
@@ -798,13 +843,10 @@ static void add_descriptor_to_stats(frame_descr *d,
 
     /* For escaped descriptors, record why they could not go short. The first
        descriptor of a frametable always escapes; the rest are classified by
-       whether their content fits (a reclaimable boundary escape) or not. */
+       whether their content fits (a section-boundary escape) or not. */
     if (!dec->is_short) {
-      if (first_in_ft) {
-        ++ stats->escape_ft_first;
-      } else {
-        ++ stats->escape_reason[classify_escape(d, dec)];
-      }
+      ++ stats->escape_reason[first_in_ft ? ESC_FT_FIRST
+                                          : classify_escape(d, dec)];
     }
 
     uint32_t sz = dec->frame_size; /* in bytes */

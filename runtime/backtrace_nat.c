@@ -520,10 +520,10 @@ void caml_debuginfo_measure(debuginfo dbg)
   uint32_t info1, info2;
 
   /* Control flow to match caml_debuginfo_location. For each debuginfo record
-     we bump the record count and bracket the referenced
-     name_info/name_and_loc_info struct into [debuginfo_low, debuginfo_high).
-     The debuginfo words themselves are accounted for by the count (each record
-     is two 32-bit words); only the structs contribute to the low/high span.
+     we bump the record count and bracket the record words, any jump words
+     traversed, and the referenced name_info/name_and_loc_info struct into
+     [debuginfo_low, debuginfo_high). These are all emitted contiguously per
+     unit, so the span is the physical size of the frametable's debuginfo.
      The defname and filename strings are not measured: they are de-duped by the
      linker, so cannot be attributed to a single frametable. */
   if (dbg == NULL) {
@@ -531,9 +531,19 @@ void caml_debuginfo_measure(debuginfo dbg)
   }
 
   do {
-    info1 = caml_read_unaligned_uint32(dbg);
+    /* The chain entry, and each next step, may land on suffix-sharing jump
+       words. */
+    for (;;) {
+      info1 = caml_read_unaligned_uint32(dbg);
+      if ((info1 & Debuginfo_jump_bit) == 0) break;
+      include_low((char *)dbg);
+      include_high((char *)dbg + sizeof(uint32_t));
+      dbg = (debuginfo)((char *)dbg + (int32_t)(info1 - Debuginfo_jump_bias));
+    }
     info2 = caml_read_unaligned_uint32((const uint32_t *)dbg + 1);
     ++debuginfo_count;
+    include_low((char *)dbg);
+    include_high((char *)dbg + 2 * sizeof(uint32_t));
 
     if (info2 & 0x80000000) {
       struct name_and_loc_info * name_and_loc_info =
@@ -547,7 +557,6 @@ void caml_debuginfo_measure(debuginfo dbg)
       include_high((char*)name_info + sizeof(struct name_info));
     }
     dbg = (debuginfo)((uint32_t*)dbg + 2);
-    if (info1 & 1) dbg = debuginfo_resolve_jumps(dbg);
   } while (info1 & 1);
 }
 
